@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+/* ── Brand Tokens ──────────────────────────────────────────── */
+:root {
+  --brand-red:    #e01e1e;
+  --brand-red-dk: #c01818;
+  --brand-red-lt: #fff0f0;
+  --brand-black:  #0a0a0a;
+  --brand-white:  #ffffff;
+  --c-surface:    #f7f7f7;
+  --c-border:     #f0f0f0;
+  --c-muted:      #6b7280;
+}
+
+/* ── Base ──────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--brand-white);
+  color: var(--brand-black);
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+}
+
+/* ── Mobile overflow fix ───────────────────────────────────── */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* ── Typography — mobile-safe sizes ───────────────────────── */
+.display    { font-size: clamp(2rem, 8vw, 5rem);    font-weight:800; line-height:1.05; letter-spacing:-0.03em; }
+.heading-xl { font-size: clamp(1.5rem, 5vw, 2.5rem); font-weight:700; line-height:1.1;  letter-spacing:-0.02em; }
+.heading-lg { font-size: clamp(1.1rem, 4vw, 1.75rem);font-weight:700; line-height:1.2;  letter-spacing:-0.015em; }
+.label      { font-size:0.6875rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; }
+
+/* ── Scrollbar hide ────────────────────────────────────────── */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Hide scrollbar on any overflow-x-auto element on mobile */
+@media (max-width: 768px) {
+  [style*="overflow-x"]::-webkit-scrollbar,
+  .overflow-x-auto::-webkit-scrollbar { display: none; }
+}
+
+.clamp-1 { overflow:hidden; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; }
+.clamp-2 { overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+
+.safe-pb { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+/* ── Card image zoom ───────────────────────────────────────── */
+.card-img { transition: transform 0.5s cubic-bezier(0.25,0.46,0.45,0.94); }
+.card-root:hover .card-img { transform: scale(1.06); }
+
+/* ── Animations ────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(16px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.fade-up { animation: fadeUp 0.4s cubic-bezier(0.25,0.46,0.45,0.94) both; }
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@keyframes fireGlow {
+  0%, 100% { box-shadow: 0 0 6px 2px rgba(224,30,30,0.5), 0 0 14px 4px rgba(255,80,0,0.25); }
+  50%       { box-shadow: 0 0 14px 4px rgba(224,30,30,0.85), 0 0 28px 8px rgba(255,80,0,0.45); }
+}
+.fire-glow {
+  animation: fireGlow 1.8s ease-in-out infinite;
+}
