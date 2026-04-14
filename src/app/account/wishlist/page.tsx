@@ -26,8 +26,8 @@ export default async function WishlistPage() {
     <div>
       <p className="text-sm text-gray-400 mb-4">{items.length} saved item{items.length !== 1 ? 's' : ''}</p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        {items.map((item) => {
-          const product = item.product as { id: string; slug: string; title: string; price: number; compare_at_price?: number; product_images?: { image_url: string; alt_text?: string }[] };
+        {items.map((item: any) => {
+          const product = item.product as unknown as { id: string; slug: string; title: string; price: number; compare_at_price?: number; product_images?: { image_url: string; alt_text?: string }[] };
           if (!product) return null;
           const img = product.product_images?.[0]?.image_url || '/placeholder-product.jpg';
           return (
