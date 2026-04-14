@@ -9,7 +9,7 @@ import { WishlistRemoveButton } from './WishlistRemoveButton';
 export const metadata: Metadata = { title: 'Wishlist' };
 
 export default async function WishlistPage() {
-  const items = await getUserWishlist();
+  const items = await getUserWishlist() as any[];
 
   if (!items.length) return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
