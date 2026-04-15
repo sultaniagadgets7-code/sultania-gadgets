@@ -60,9 +60,9 @@ export function Navbar({ categories = [] }: NavbarProps) {
   if (pathname.startsWith('/admin')) return null;
 
   const navLinks = [
-    { href: '/',      label: 'Home' },
-    { href: '/shop',  label: 'Shop' },
-    { href: '/about', label: 'About Us' },
+    { href: '/',      label: 'Home', red: false },
+    { href: '/shop',  label: 'Shop', red: false },
+    { href: '/about', label: 'About Us', red: false },
   ];
 
   return (
