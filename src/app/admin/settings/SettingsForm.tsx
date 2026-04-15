@@ -192,7 +192,7 @@ export function SettingsForm({ settings }: SettingsFormProps) {
               <div className="flex-1">
                 <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">{lbl}</p>
                 <input
-                  value={(form as Record<string, string>)[key] ?? ''}
+                  value={(form as any)[key] ?? ''}
                   onChange={(e) => setForm({ ...form, [key]: e.target.value })}
                   placeholder={placeholder}
                   className={inp}
