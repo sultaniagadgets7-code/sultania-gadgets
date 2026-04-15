@@ -13,15 +13,20 @@ export default async function AdminStockPage() {
     .lte('stock_quantity', 5)
     .order('stock_quantity', { ascending: true });
 
+  const products = (data ?? []).map((p: any) => ({
+    ...p,
+    category: Array.isArray(p.category) ? p.category[0] : p.category,
+  }));
+
   return (
     <div>
       <div className="mb-6">
         <h1 className="text-xl font-bold text-gray-900">Low Stock Alerts</h1>
         <p className="text-sm text-gray-500 mt-1">
-          {(data ?? []).length} active product{(data ?? []).length !== 1 ? 's' : ''} with 5 or fewer units
+          {products.length} active product{products.length !== 1 ? 's' : ''} with 5 or fewer units
         </p>
       </div>
-      <StockTable products={data ?? []} />
+      <StockTable products={products} />
     </div>
   );
 }
