@@ -26,12 +26,12 @@ export function SettingsForm({ settings }: SettingsFormProps) {
     announcement_text: settings?.announcement_text ?? '',
     hero_headline: settings?.hero_headline ?? '',
     hero_subtext: settings?.hero_subtext ?? '',
-    social_whatsapp: (settings as Record<string, unknown>)?.social_whatsapp as string ?? '',
-    social_facebook: (settings as Record<string, unknown>)?.social_facebook as string ?? '',
-    social_instagram: (settings as Record<string, unknown>)?.social_instagram as string ?? '',
-    social_tiktok: (settings as Record<string, unknown>)?.social_tiktok as string ?? '',
-    social_youtube: (settings as Record<string, unknown>)?.social_youtube as string ?? '',
-    social_twitter: (settings as Record<string, unknown>)?.social_twitter as string ?? '',
+    social_whatsapp: settings?.social_whatsapp ?? '',
+    social_facebook: settings?.social_facebook ?? '',
+    social_instagram: settings?.social_instagram ?? '',
+    social_tiktok: settings?.social_tiktok ?? '',
+    social_youtube: settings?.social_youtube ?? '',
+    social_twitter: settings?.social_twitter ?? '',
   });
 
   async function handleSave() {
