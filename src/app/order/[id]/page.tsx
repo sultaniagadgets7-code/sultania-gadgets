@@ -1,170 +1,280 @@
-import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle, MessageCircle, Package, Truck, MapPin, Phone } from 'lucide-react';
-import { getSiteSettings } from '@/lib/queries';
+import Image from 'next/image';
+import { Package, CheckCircle, Truck, Clock, XCircle, MapPin, Phone, User, MessageCircle, FileText } from 'lucide-react';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { formatPrice, getWhatsAppUrl } from '@/lib/utils';
+import { getSiteSettings } from '@/lib/queries';
+import type { Metadata } from 'next';
 
-export const metadata: Metadata = {
-  title: 'Order Confirmed',
-  robots: { index: false, follow: false },
+interface Props {
+  params: Promise<{ id: string }>;
+}
+
+const STATUS_CONFIG: Record<string, { icon: React.ElementType; color: string; label: string; description: string }> = {
+  pending: {
+    icon: Clock,
+    color: 'text-orange-500 bg-orange-50 border-orange-200',
+    label: 'Pending Confirmation',
+    description: 'We received your order and will call you shortly to confirm.',
+  },
+  confirmed: {
+    icon: CheckCircle,
+    color: 'text-blue-500 bg-blue-50 border-blue-200',
+    label: 'Confirmed',
+    description: 'Your order is confirmed and being prepared for shipment.',
+  },
+  shipped: {
+    icon: Truck,
+    color: 'text-purple-500 bg-purple-50 border-purple-200',
+    label: 'Shipped',
+    description: 'Your order is on the way! Expect delivery within 2-4 business days.',
+  },
+  delivered: {
+    icon: CheckCircle,
+    color: 'text-green-500 bg-green-50 border-green-200',
+    label: 'Delivered',
+    description: 'Your order has been delivered. Thank you for shopping with us!',
+  },
+  cancelled: {
+    icon: XCircle,
+    color: 'text-red-500 bg-red-50 border-red-200',
+    label: 'Cancelled',
+    description: 'This order has been cancelled.',
+  },
 };
 
-const STATUS_STEPS = ['pending', 'confirmed', 'shipped', 'delivered'];
-
-export default async function OrderConfirmationPage({ params }: { params: Promise<{ id: string }> }) {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  
-  // Use admin client (service role) to bypass RLS — order UUID is unguessable
-  const { createAdminClient } = await import('@/lib/supabase/admin');
-  const supabase = createAdminClient();
+  return {
+    title: `Order #${id.slice(0, 8).toUpperCase()}`,
+    robots: { index: false, follow: false },
+  };
+}
 
-  const { data: order } = await supabase
+export default async function OrderDetailsPage({ params }: Props) {
+  const { id } = await params;
+  const admin = createAdminClient();
+
+  const { data: order, error } = await admin
     .from('orders')
-    .select('*, order_items(product_title_snapshot, price_snapshot, quantity)')
+    .select(`
+      *,
+      order_items (
+        id,
+        product_id,
+        product_title_snapshot,
+        price_snapshot,
+        quantity,
+        product:products (
+          slug,
+          product_images (image_url, alt_text)
+        )
+      )
+    `)
     .eq('id', id)
-    .maybeSingle();
+    .single();
 
-  // If order not found or error, return 404
-  if (!order) {
+  if (error || !order) {
     notFound();
   }
 
   const settings = await getSiteSettings();
   const wa = settings?.whatsapp_number || process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '923001234567';
-  const orderId = order.id.slice(0, 8).toUpperCase();
-  const currentStep = STATUS_STEPS.indexOf(order.status);
+
+  const cfg = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.pending;
+  const Icon = cfg.icon;
+  const shortId = order.id.slice(0, 8).toUpperCase();
+
+  // Calculate subtotal (before delivery fee)
+  const itemsTotal = order.order_items?.reduce((sum: number, item: any) => sum + (item.price_snapshot * item.quantity), 0) || 0;
+  const deliveryFee = order.total - itemsTotal;
 
   return (
-    <div className="max-w-2xl mx-auto px-5 sm:px-8 py-12">
-
-      {/* Success header */}
-      <div className="text-center mb-10">
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <CheckCircle className="w-8 h-8 text-green-600" aria-hidden="true" />
+    <div className="max-w-4xl mx-auto px-4 sm:px-8 py-6 sm:py-10">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex items-center gap-2 text-sm text-[#94a3b8] mb-2">
+          <Link href="/" className="hover:text-[#0f172a] transition-colors">Home</Link>
+          <span>/</span>
+          <span className="text-[#0f172a]">Order Details</span>
         </div>
-        <h1 className="font-black text-2xl text-gray-950 tracking-tight mb-1">Order Confirmed!</h1>
-        <p className="text-gray-500 text-sm">
-          Order <span className="font-mono font-bold text-gray-950">#{orderId}</span>
-        </p>
-        <p className="text-gray-400 text-xs mt-1">
-          {new Date(order.created_at).toLocaleDateString('en-PK', { day: 'numeric', month: 'long', year: 'numeric' })}
-        </p>
-      </div>
-
-      {/* Order status tracker */}
-      <div className="bg-[#f7f7f7] rounded-[20px] p-5 mb-5">
-        <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Order Status</p>
-        <div className="flex items-center gap-0">
-          {STATUS_STEPS.map((step, i) => {
-            const done = i <= currentStep;
-            const active = i === currentStep;
-            return (
-              <div key={step} className="flex items-center flex-1">
-                <div className="flex flex-col items-center">
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                    done ? 'bg-gray-950 text-white' : 'bg-gray-200 text-gray-400'
-                  } ${active ? 'ring-2 ring-offset-2 ring-gray-950' : ''}`}>
-                    {done && i < currentStep ? '✓' : i + 1}
-                  </div>
-                  <p className={`text-[9px] font-semibold uppercase tracking-wide mt-1 capitalize ${done ? 'text-gray-950' : 'text-gray-400'}`}>
-                    {step}
-                  </p>
-                </div>
-                {i < STATUS_STEPS.length - 1 && (
-                  <div className={`flex-1 h-0.5 mx-1 mb-4 ${i < currentStep ? 'bg-gray-950' : 'bg-gray-200'}`} />
-                )}
-              </div>
-            );
+        <h1 className="font-black text-2xl sm:text-3xl text-[#0f172a] tracking-tight">
+          Order #{shortId}
+        </h1>
+        <p className="text-sm text-[#64748b] mt-1">
+          Placed on {new Date(order.created_at).toLocaleDateString('en-PK', { 
+            day: 'numeric', 
+            month: 'long', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
           })}
-        </div>
+        </p>
       </div>
 
-      {/* Order items */}
-      <div className="bg-[#f7f7f7] rounded-[20px] p-5 mb-5">
-        <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Items Ordered</p>
-        <div className="space-y-3">
-          {order.order_items?.map((item: { product_title_snapshot: string; quantity: number; price_snapshot: number }, i: number) => (
-            <div key={i} className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shrink-0">
-                  <Package className="w-4 h-4 text-gray-400" aria-hidden="true" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">{item.product_title_snapshot}</p>
-                  <p className="text-xs text-gray-400">Qty: {item.quantity}</p>
-                </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Content */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Status Card */}
+          <div className={`border-2 rounded-2xl p-6 ${cfg.color}`}>
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-white/50 flex items-center justify-center shrink-0">
+                <Icon className="w-6 h-6" />
               </div>
-              <p className="text-sm font-bold text-gray-950">{formatPrice(item.price_snapshot * item.quantity)}</p>
+              <div className="flex-1">
+                <h2 className="font-bold text-lg mb-1">{cfg.label}</h2>
+                <p className="text-sm opacity-90">{cfg.description}</p>
+              </div>
             </div>
-          ))}
-        </div>
+          </div>
 
-        <div className="border-t border-gray-200 mt-4 pt-4 space-y-1.5 text-sm">
-          <div className="flex justify-between text-gray-500"><span>Subtotal</span><span>{formatPrice(order.subtotal)}</span></div>
-          <div className="flex justify-between text-gray-500"><span>Delivery</span><span>{formatPrice(order.delivery_fee)}</span></div>
-          {order.discount_amount > 0 && (
-            <div className="flex justify-between text-green-600 font-semibold">
-              <span>Discount</span><span>−{formatPrice(order.discount_amount)}</span>
+          {/* Order Items */}
+          <div className="bg-white border border-[#e2e8f0] rounded-2xl p-6">
+            <h2 className="font-bold text-lg text-[#0f172a] mb-4 flex items-center gap-2">
+              <Package className="w-5 h-5 text-[#94a3b8]" />
+              Order Items
+            </h2>
+            <div className="space-y-4">
+              {order.order_items?.map((item: any) => {
+                const imageUrl = item.product?.product_images?.[0]?.image_url || '/placeholder-product.jpg';
+                const imageAlt = item.product?.product_images?.[0]?.alt_text || item.product_title_snapshot;
+                
+                return (
+                  <div key={item.id} className="flex items-center gap-4 pb-4 border-b border-[#f1f5f9] last:border-0 last:pb-0">
+                    <div className="relative w-20 h-20 bg-[#f8fafc] rounded-xl overflow-hidden shrink-0">
+                      <Image
+                        src={imageUrl}
+                        alt={imageAlt}
+                        fill
+                        className="object-contain p-2"
+                        sizes="80px"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      {item.product?.slug ? (
+                        <Link 
+                          href={`/product/${item.product.slug}`}
+                          className="font-semibold text-[#0f172a] hover:text-[#dc2626] transition-colors line-clamp-2">
+                          {item.product_title_snapshot}
+                        </Link>
+                      ) : (
+                        <p className="font-semibold text-[#0f172a] line-clamp-2">
+                          {item.product_title_snapshot}
+                        </p>
+                      )}
+                      <p className="text-sm text-[#94a3b8] mt-1">
+                        Quantity: {item.quantity} × {formatPrice(item.price_snapshot)}
+                      </p>
+                    </div>
+                    <p className="font-bold text-[#0f172a] shrink-0">
+                      {formatPrice(item.price_snapshot * item.quantity)}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Order Summary */}
+            <div className="mt-6 pt-6 border-t border-[#e2e8f0] space-y-2">
+              <div className="flex justify-between text-sm text-[#64748b]">
+                <span>Subtotal</span>
+                <span>{formatPrice(itemsTotal)}</span>
+              </div>
+              <div className="flex justify-between text-sm text-[#64748b]">
+                <span>Delivery Fee</span>
+                <span>{formatPrice(deliveryFee)}</span>
+              </div>
+              {order.coupon_code && order.discount_amount && (
+                <div className="flex justify-between text-sm text-green-600 font-semibold">
+                  <span>Discount ({order.coupon_code})</span>
+                  <span>−{formatPrice(order.discount_amount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between font-black text-lg text-[#0f172a] pt-2 border-t border-[#e2e8f0]">
+                <span>Total</span>
+                <span>{formatPrice(order.total)}</span>
+              </div>
+              <p className="text-xs text-[#94a3b8] text-center pt-2">
+                Payment Method: Cash on Delivery (COD)
+              </p>
+            </div>
+          </div>
+
+          {/* Order Notes */}
+          {order.notes && (
+            <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-2xl p-5">
+              <h3 className="font-bold text-sm text-[#0f172a] mb-2 flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[#94a3b8]" />
+                Order Notes
+              </h3>
+              <p className="text-sm text-[#64748b]">{order.notes}</p>
             </div>
           )}
-          <div className="flex justify-between font-black text-gray-950 text-base border-t border-gray-200 pt-2 mt-1">
-            <span>Total (COD)</span><span>{formatPrice(order.total)}</span>
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
+          {/* Customer Details */}
+          <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
+            <h2 className="font-bold text-base text-[#0f172a] mb-4">Customer Details</h2>
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <User className="w-4 h-4 text-[#94a3b8] mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs text-[#94a3b8] uppercase tracking-wider mb-0.5">Name</p>
+                  <p className="text-sm font-semibold text-[#0f172a]">{order.customer_name}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Phone className="w-4 h-4 text-[#94a3b8] mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs text-[#94a3b8] uppercase tracking-wider mb-0.5">Phone</p>
+                  <p className="text-sm font-semibold text-[#0f172a]">{order.phone}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <MapPin className="w-4 h-4 text-[#94a3b8] mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs text-[#94a3b8] uppercase tracking-wider mb-0.5">Delivery Address</p>
+                  <p className="text-sm font-semibold text-[#0f172a]">
+                    {order.address}
+                    <br />
+                    {order.city}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="space-y-3">
+            <a
+              href={getWhatsAppUrl(wa, `Assalamualaikum, I have a question about my order #${shortId}`)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-xs uppercase tracking-widest py-3.5 rounded-full transition-colors touch-manipulation"
+              style={{ touchAction: 'manipulation' }}>
+              <MessageCircle className="w-4 h-4" />
+              Contact Support
+            </a>
+            <a
+              href={`/api/invoice/${order.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full bg-[#f8fafc] border border-[#e2e8f0] text-[#64748b] hover:bg-[#f1f5f9] font-bold text-xs uppercase tracking-widest py-3.5 rounded-full transition-colors touch-manipulation"
+              style={{ touchAction: 'manipulation' }}>
+              📄 Download Invoice
+            </a>
+            <Link
+              href="/shop"
+              className="flex items-center justify-center w-full border border-[#e2e8f0] text-[#64748b] hover:bg-[#f8fafc] font-bold text-xs uppercase tracking-widest py-3.5 rounded-full transition-colors touch-manipulation"
+              style={{ touchAction: 'manipulation' }}>
+              Continue Shopping
+            </Link>
           </div>
         </div>
       </div>
-
-      {/* Delivery info */}
-      <div className="bg-[#f7f7f7] rounded-[20px] p-5 mb-5">
-        <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Delivery Details</p>
-        <div className="space-y-2.5">
-          <div className="flex items-start gap-3 text-sm text-gray-700">
-            <Phone className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" aria-hidden="true" />
-            <span>{order.customer_name} · {order.phone}</span>
-          </div>
-          <div className="flex items-start gap-3 text-sm text-gray-700">
-            <MapPin className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" aria-hidden="true" />
-            <span>{order.address}, {order.city}</span>
-          </div>
-          <div className="flex items-start gap-3 text-sm text-gray-700">
-            <Truck className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" aria-hidden="true" />
-            <span>Estimated delivery: 2–4 business days · Cash on Delivery</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="space-y-3">
-        <a href={getWhatsAppUrl(wa, `Assalamualaikum, I placed an order #${orderId}. Please confirm.`)}
-          target="_blank" rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-xs uppercase tracking-widest py-4 rounded-full transition-colors">
-          <MessageCircle className="w-4 h-4" /> Confirm via WhatsApp
-        </a>
-        <Link href={`/exchange-request?order=${orderId}`}
-          className="flex items-center justify-center gap-2 w-full bg-[#e01e1e] hover:bg-[#c01818] text-white font-bold text-xs uppercase tracking-widest py-4 rounded-full transition-colors">
-          <Package className="w-4 h-4" /> Request Exchange
-        </Link>
-        <a href={`/api/invoice/${order.id}`} target="_blank" rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs uppercase tracking-widest py-4 rounded-full transition-colors">
-          📄 Download Invoice
-        </a>
-        <Link href="/account/orders"
-          className="flex items-center justify-center gap-2 w-full bg-gray-950 hover:bg-gray-800 text-white font-bold text-xs uppercase tracking-widest py-4 rounded-full transition-colors">
-          <Package className="w-4 h-4" /> View My Orders
-        </Link>
-        <Link href="/shop"
-          className="flex items-center justify-center w-full border border-gray-200 text-gray-600 font-bold text-xs uppercase tracking-widest py-4 rounded-full hover:bg-gray-50 transition-colors">
-          Continue Shopping
-        </Link>
-      </div>
-
-      {/* Track order link */}
-      <p className="text-center text-xs text-gray-400 mt-6">
-        Want to check your order later?{' '}
-        <Link href="/track-order" className="text-gray-950 font-semibold underline underline-offset-4">
-          Track your order
-        </Link>
-      </p>
     </div>
   );
 }
