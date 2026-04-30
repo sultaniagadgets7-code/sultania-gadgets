@@ -76,7 +76,10 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const [categories, settings] = await Promise.all([getNavCategories(), getSiteSettings()]);
+  const [categories, settings] = await Promise.all([
+    getNavCategories().catch(() => []),
+    getSiteSettings().catch(() => null),
+  ]);
   const wa = settings?.whatsapp_number || process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '923001234567';
   const deliveryFee = settings?.delivery_fee ?? 200;
 

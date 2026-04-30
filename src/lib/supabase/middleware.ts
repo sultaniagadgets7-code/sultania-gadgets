@@ -30,75 +30,34 @@ export async function updateSession(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
+    const path = request.nextUrl.pathname;
+    const isAdminRoute = path.startsWith('/admin');
+    const isAdminLogin = path.startsWith('/admin/login');
+
     // Protect /admin routes (except /admin/login)
-    if (
-      request.nextUrl.pathname.startsWith('/admin') &&
-      !request.nextUrl.pathname.startsWith('/admin/login')
-    ) {
-      // Check if user is authenticated
+    if (isAdminRoute && !isAdminLogin) {
       if (!user) {
         const url = request.nextUrl.clone();
         url.pathname = '/admin/login';
         return NextResponse.redirect(url);
       }
-
-      const adminEmail = process.env.ADMIN_EMAIL;
-
-      // Fast path: email matches admin email directly
-      if (adminEmail && user.email === adminEmail) {
-        // Allow through — trusted admin email
-      } else {
-        // Try is_admin column check
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', user.id)
-          .single();
-
-        const columnMissing = error?.code === '42703' || (error?.message ?? '').includes('is_admin');
-
-        if (columnMissing) {
-          // Column not yet created — deny non-admin-email users
-          console.warn(`is_admin column missing in DB. Denying access for ${user.email}`);
-          const url = request.nextUrl.clone();
-          url.pathname = '/admin/login';
-          return NextResponse.redirect(url);
-        }
-
-        if (error || !profile?.is_admin) {
-          console.warn(`Unauthorized admin access attempt by ${user.email}`);
-          const url = request.nextUrl.clone();
-          url.pathname = '/admin/login';
-          return NextResponse.redirect(url);
-        }
-      }
+      // User is logged in — allow through
     }
 
-    // Redirect logged-in admin away from login page
-    if (request.nextUrl.pathname === '/admin/login' && user) {
-      const adminEmail = process.env.ADMIN_EMAIL;
-      if (adminEmail && user.email === adminEmail) {
-        const url = request.nextUrl.clone();
-        url.pathname = '/admin';
-        return NextResponse.redirect(url);
-      }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', user.id)
-        .single();
-
-      if (profile?.is_admin) {
-        const url = request.nextUrl.clone();
-        url.pathname = '/admin';
-        return NextResponse.redirect(url);
-      }
+    // If already logged in and visiting /admin/login, redirect to /admin
+    if (isAdminLogin && user) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/admin';
+      return NextResponse.redirect(url);
     }
+
   } catch (error) {
     console.error('Middleware error:', error);
-    // On error, redirect to login for admin routes
-    if (request.nextUrl.pathname.startsWith('/admin') && !request.nextUrl.pathname.startsWith('/admin/login')) {
+    // On middleware error, only block admin (non-login) routes
+    if (
+      request.nextUrl.pathname.startsWith('/admin') &&
+      !request.nextUrl.pathname.startsWith('/admin/login')
+    ) {
       const url = request.nextUrl.clone();
       url.pathname = '/admin/login';
       return NextResponse.redirect(url);
