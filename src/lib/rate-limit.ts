@@ -26,7 +26,7 @@ export function getClientIp(request: NextRequest): string {
 export async function rateLimit(
   key: string,
   config: RateLimitConfig
-): Promise<{ success: boolean; reset: number }> {
+): Promise<{ success: boolean; remaining: number; reset: number }> {
   const now = Date.now();
   const record = rateLimitMap.get(key);
 
@@ -36,16 +36,16 @@ export async function rateLimit(
       count: 1,
       resetTime: now + config.interval,
     });
-    return { success: true, reset: now + config.interval };
+    return { success: true, remaining: config.maxRequests - 1, reset: now + config.interval };
   }
 
   if (record.count >= config.maxRequests) {
-    return { success: false, reset: record.resetTime };
+    return { success: false, remaining: 0, reset: record.resetTime };
   }
 
   // Increment count
   record.count++;
-  return { success: true, reset: record.resetTime };
+  return { success: true, remaining: config.maxRequests - record.count, reset: record.resetTime };
 }
 
 export function rateLimitResponse(resetTime: number): NextResponse {
