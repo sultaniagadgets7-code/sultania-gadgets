@@ -51,7 +51,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
-              "connect-src 'self' https://*.supabase.co https://pub-bdcc7c4e796b4cf7a97402a408b5dc6c.r2.dev https://www.google-analytics.com https://cloudflareinsights.com",
+              "connect-src 'self' https://*.supabase.co https://pub-bdcc7c4e796b4cf7a97402a408b5dc6c.r2.dev https://www.google-analytics.com https://www.facebook.com https://connect.facebook.net https://cloudflareinsights.com",
               "frame-src https://embed.tawk.to",
               "object-src 'none'",
               "base-uri 'self'",
