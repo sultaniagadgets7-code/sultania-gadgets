@@ -22,16 +22,30 @@ function getDateRange(daysAgo: number) {
 export default async function AdminAnalyticsPage() {
   const supabase = createAdminClient();
 
-  const { data: allOrders } = await supabase
+  // Fetch orders and order_items separately to avoid nested query issues
+  const { data: rawOrders } = await supabase
     .from('orders')
-    .select('total, status, created_at, order_items(product_title_snapshot, quantity)')
+    .select('id, total, status, created_at')
     .order('created_at', { ascending: false });
 
   const { data: allOrdersForCustomers } = await supabase
     .from('orders')
     .select('phone');
 
-  const orders: OrderRow[] = (allOrders ?? []) as OrderRow[];
+  // Fetch order items separately
+  const orderIds = (rawOrders ?? []).map(o => o.id);
+  const { data: rawItems } = orderIds.length > 0
+    ? await supabase
+        .from('order_items')
+        .select('order_id, product_title_snapshot, quantity')
+        .in('order_id', orderIds)
+    : { data: [] };
+
+  // Merge items into orders
+  const orders: OrderRow[] = (rawOrders ?? []).map(o => ({
+    ...o,
+    order_items: (rawItems ?? []).filter(item => item.order_id === o.id),
+  })) as OrderRow[];
   const nonCancelled = orders.filter((o) => o.status !== 'cancelled');
 
   // Date boundaries

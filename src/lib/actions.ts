@@ -89,7 +89,9 @@ export async function createOrder(
       discount: 0,
       total,
     }, user?.email);
-  } catch {}
+  } catch (emailErr) {
+    console.error('Failed to send order confirmation email:', emailErr);
+  }
 
   revalidatePath('/admin/orders');
   return { success: true, orderId: order.id, total, deliveryFee };
@@ -538,7 +540,8 @@ export async function deleteTestimonial(id: string) {
 // ── Stock ─────────────────────────────────────────────────────
 export async function updateProductStock(productId: string, quantity: number) {
   const supabase = await createClient();
-  await supabase.from('products').update({ stock_quantity: quantity, updated_at: new Date().toISOString() }).eq('id', productId);
+  const { error } = await supabase.from('products').update({ stock_quantity: quantity, updated_at: new Date().toISOString() }).eq('id', productId);
+  if (error) return { success: false, error: error.message };
   revalidatePath('/admin/stock');
   return { success: true };
 }
@@ -587,7 +590,8 @@ export async function deleteCoupon(id: string) {
 // ── Order Notes ───────────────────────────────────────────────
 export async function updateOrderNote(orderId: string, note: string) {
   const supabase = await createClient();
-  await supabase.from('orders').update({ notes_internal: note }).eq('id', orderId);
+  const { error } = await supabase.from('orders').update({ notes_internal: note }).eq('id', orderId);
+  if (error) return { success: false, error: error.message };
   revalidatePath('/admin/orders');
   return { success: true };
 }
@@ -743,7 +747,9 @@ export async function createOrderWithCoupon(
       discount,
       total,
     }, customerEmail || user?.email);
-  } catch {}
+  } catch (emailErr) {
+    console.error('Failed to send order confirmation email:', emailErr);
+  }
 
   revalidatePath('/admin/orders');
   return { success: true, orderId: order.id, total, deliveryFee, discount };

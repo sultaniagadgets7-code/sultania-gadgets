@@ -55,16 +55,18 @@ export async function saveBlogPost(data: BlogPostData) {
   return { success: true };
 }
 
-export async function deleteBlogPost(id: string): Promise<void> {
+export async function deleteBlogPost(id: string): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
-  await supabase.from('blog_posts').delete().eq('id', id);
+  const { error } = await supabase.from('blog_posts').delete().eq('id', id);
+  if (error) return { success: false, error: error.message };
   revalidatePath('/admin/blog');
   revalidatePath('/blog');
+  return { success: true };
 }
 
-export async function toggleBlogPublished(id: string, published: boolean): Promise<void> {
+export async function toggleBlogPublished(id: string, published: boolean): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
-  await supabase
+  const { error } = await supabase
     .from('blog_posts')
     .update({
       published,
@@ -73,6 +75,8 @@ export async function toggleBlogPublished(id: string, published: boolean): Promi
     })
     .eq('id', id);
 
+  if (error) return { success: false, error: error.message };
   revalidatePath('/admin/blog');
   revalidatePath('/blog');
+  return { success: true };
 }
