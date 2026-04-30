@@ -47,10 +47,11 @@ const nextConfig: NextConfig = {
             value: [
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://connect.facebook.net https://embed.tawk.to https://static.cloudflareinsights.com",
+              "script-src-elem 'self' 'unsafe-inline' https://www.googletagmanager.com https://connect.facebook.net https://embed.tawk.to https://static.cloudflareinsights.com",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
-              "connect-src 'self' https://*.supabase.co https://pub-*.r2.dev https://www.google-analytics.com https://cloudflareinsights.com",
+              "connect-src 'self' https://*.supabase.co https://pub-bdcc7c4e796b4cf7a97402a408b5dc6c.r2.dev https://www.google-analytics.com https://cloudflareinsights.com",
               "frame-src https://embed.tawk.to",
               "object-src 'none'",
               "base-uri 'self'",
