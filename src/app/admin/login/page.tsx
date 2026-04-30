@@ -25,7 +25,6 @@ export default function AdminLoginPage() {
       const data = await res.json();
 
       if (data.success) {
-        // Hard navigate so browser picks up the new session cookies
         window.location.replace('/admin');
       } else {
         setError(data.error || 'Invalid credentials');

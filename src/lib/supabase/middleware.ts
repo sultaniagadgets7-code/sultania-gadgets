@@ -26,43 +26,14 @@ export async function updateSession(request: NextRequest) {
       }
     );
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    const path = request.nextUrl.pathname;
-    const isAdminRoute = path.startsWith('/admin');
-    const isAdminLogin = path.startsWith('/admin/login');
-
-    // Protect /admin routes (except /admin/login)
-    if (isAdminRoute && !isAdminLogin) {
-      if (!user) {
-        const url = request.nextUrl.clone();
-        url.pathname = '/admin/login';
-        return NextResponse.redirect(url);
-      }
-      // User is logged in — allow through
-    }
-
-    // If already logged in and visiting /admin/login, redirect to /admin
-    if (isAdminLogin && user) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/admin';
-      return NextResponse.redirect(url);
-    }
+    // Just refresh the session — no redirects at all
+    await supabase.auth.getUser();
 
   } catch (error) {
     console.error('Middleware error:', error);
-    // On middleware error, only block admin (non-login) routes
-    if (
-      request.nextUrl.pathname.startsWith('/admin') &&
-      !request.nextUrl.pathname.startsWith('/admin/login')
-    ) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/admin/login';
-      return NextResponse.redirect(url);
-    }
   }
 
+  // Pass pathname to layout
+  supabaseResponse.headers.set('x-pathname', request.nextUrl.pathname);
   return supabaseResponse;
 }

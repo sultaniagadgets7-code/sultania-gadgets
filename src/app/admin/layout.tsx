@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
 import {
   Zap, LayoutDashboard, Package, ShoppingBag, LogOut, Star, Tag,
   BarChart2, Users, AlertTriangle, Ticket, HelpCircle, MessageSquare, Settings,
@@ -22,16 +24,37 @@ const NAV_ITEMS = [
   { href: '/admin/products',          icon: Package,         label: 'Products' },
   { href: '/admin/stock',             icon: AlertTriangle,   label: 'Low Stock' },
   { href: '/admin/bundles',           icon: Package2,        label: 'Bundles' },
-  { href: '/admin/categories',   icon: Tag,             label: 'Categories' },
-  { href: '/admin/coupons',      icon: Ticket,          label: 'Coupons' },
-  { href: '/admin/reviews',      icon: Star,            label: 'Reviews' },
-  { href: '/admin/faqs',         icon: HelpCircle,      label: 'FAQs' },
-  { href: '/admin/testimonials', icon: MessageSquare,   label: 'Testimonials' },
-  { href: '/admin/blog',         icon: FileText,        label: 'Blog Posts' },
-  { href: '/admin/settings',     icon: Settings,        label: 'Settings' },
+  { href: '/admin/categories',        icon: Tag,             label: 'Categories' },
+  { href: '/admin/coupons',           icon: Ticket,          label: 'Coupons' },
+  { href: '/admin/reviews',           icon: Star,            label: 'Reviews' },
+  { href: '/admin/faqs',              icon: HelpCircle,      label: 'FAQs' },
+  { href: '/admin/testimonials',      icon: MessageSquare,   label: 'Testimonials' },
+  { href: '/admin/blog',              icon: FileText,        label: 'Blog Posts' },
+  { href: '/admin/settings',          icon: Settings,        label: 'Settings' },
 ];
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  // Skip auth check for login page
+  const { headers } = await import('next/headers');
+  const headersList = await headers();
+  const pathname = headersList.get('x-pathname') || '';
+  const isLoginPage = pathname === '/admin/login';
+
+  if (!isLoginPage) {
+    // Auth check for all admin pages except login
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      redirect('/admin/login');
+    }
+  }
+
+  // Login page — render without sidebar
+  if (isLoginPage) {
+    return <>{children}</>;
+  }
+
   return (
     <div className="min-h-screen bg-gray-100 flex">
       {/* Sidebar */}
