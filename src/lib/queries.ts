@@ -218,14 +218,28 @@ export async function getProductsByCategory(categorySlug: string): Promise<Produ
     .single();
   if (!category) return [];
 
-  const { data, error } = await supabase
+  // Fetch products
+  const { data: products, error } = await supabase
     .from('products')
-    .select('*, category:categories(id, name, slug), product_images(image_url, alt_text, sort_order)')
+    .select('id, slug, title, price, compare_at_price, badge, stock_quantity, category_id')
     .eq('category_id', category.id)
     .eq('is_active', true)
     .order('created_at', { ascending: false });
-  if (error) return [];
-  return (data ?? []) as Product[];
+    
+  if (error || !products) return [];
+
+  // Fetch category details and images
+  const productIds = products.map(p => p.id);
+  const [categoryData, images] = await Promise.all([
+    supabase.from('categories').select('id, name, slug').eq('id', category.id).single(),
+    supabase.from('product_images').select('product_id, image_url, alt_text, sort_order').in('product_id', productIds).order('sort_order'),
+  ]);
+
+  return products.map(p => ({
+    ...p,
+    category: categoryData.data,
+    product_images: images.data?.filter(img => img.product_id === p.id) || [],
+  })) as Product[];
 }
 
 export async function getFaqItems(productId?: string): Promise<FaqItem[]> {
@@ -278,23 +292,40 @@ export async function getAdminOrders(status?: string): Promise<Order[]> {
     return [];
   }
 
-  // Then, fetch order items for all orders
+  if (orders.length === 0) return [];
+
+  // Fetch order items
   const orderIds = orders.map(o => o.id);
   const { data: orderItems } = await supabase
     .from('order_items')
-    .select(`
-      *,
-      product:products(
-        title,
-        product_images(image_url, sort_order)
-      )
-    `)
+    .select('*')
     .in('order_id', orderIds);
 
-  // Attach order items to their respective orders
+  // Fetch products for order items
+  const productIds = [...new Set(orderItems?.map(item => item.product_id).filter(Boolean) || [])];
+  let products = null;
+  let productImages = null;
+
+  if (productIds.length > 0) {
+    const [productsResult, imagesResult] = await Promise.all([
+      supabase.from('products').select('id, title').in('id', productIds),
+      supabase.from('product_images').select('product_id, image_url, sort_order').in('product_id', productIds).order('sort_order'),
+    ]);
+    products = productsResult.data;
+    productImages = imagesResult.data;
+  }
+
+  // Attach products and images to order items
+  const itemsWithProducts = orderItems?.map(item => ({
+    ...item,
+    product: products?.find(p => p.id === item.product_id) || null,
+    product_images: productImages?.filter(img => img.product_id === item.product_id) || [],
+  })) || [];
+
+  // Attach order items to orders
   const ordersWithItems = orders.map(order => ({
     ...order,
-    order_items: orderItems?.filter(item => item.order_id === order.id) || [],
+    order_items: itemsWithProducts.filter(item => item.order_id === order.id),
   }));
 
   return ordersWithItems as Order[];
