@@ -128,7 +128,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             '@type': 'ContactPoint', 
             contactType: 'customer service', 
             availableLanguage: ['English', 'Urdu'],
-            telephone: `+${settings?.whatsapp_number || '923001234567'}`,
+            telephone: `+${(settings as {whatsapp_number?:string}|null)?.whatsapp_number || '923001234567'}`,
             contactOption: 'TollFree',
           },
           address: {
@@ -151,11 +151,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             ],
           },
           sameAs: [
-            settings?.social_facebook,
-            settings?.social_instagram,
-            settings?.social_twitter,
-            settings?.social_youtube,
-            settings?.social_tiktok,
+            (settings as {social_facebook?:string}|null)?.social_facebook,
+            (settings as {social_instagram?:string}|null)?.social_instagram,
+            (settings as {social_twitter?:string}|null)?.social_twitter,
+            (settings as {social_youtube?:string}|null)?.social_youtube,
+            (settings as {social_tiktok?:string}|null)?.social_tiktok,
           ].filter(Boolean),
         })}} />
         {/* WebSite structured data */}
