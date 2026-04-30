@@ -186,16 +186,41 @@ export async function getTestimonials(): Promise<Testimonial[]> {
 export async function getAdminOrders(status?: string): Promise<Order[]> {
   const { createAdminClient } = await import('@/lib/supabase/admin');
   const supabase = createAdminClient();
-  let query = supabase
+  
+  // First, fetch orders
+  let ordersQuery = supabase
     .from('orders')
-    .select('*, order_items(*, product:products(title, product_images(image_url, sort_order)))')
+    .select('*')
     .order('created_at', { ascending: false });
 
-  if (status && status !== 'all') query = query.eq('status', status);
+  if (status && status !== 'all') ordersQuery = ordersQuery.eq('status', status);
 
-  const { data, error } = await query;
-  if (error) return [];
-  return (data ?? []) as Order[];
+  const { data: orders, error: ordersError } = await ordersQuery;
+  if (ordersError || !orders) {
+    console.error('Error fetching orders:', ordersError);
+    return [];
+  }
+
+  // Then, fetch order items for all orders
+  const orderIds = orders.map(o => o.id);
+  const { data: orderItems } = await supabase
+    .from('order_items')
+    .select(`
+      *,
+      product:products(
+        title,
+        product_images(image_url, sort_order)
+      )
+    `)
+    .in('order_id', orderIds);
+
+  // Attach order items to their respective orders
+  const ordersWithItems = orders.map(order => ({
+    ...order,
+    order_items: orderItems?.filter(item => item.order_id === order.id) || [],
+  }));
+
+  return ordersWithItems as Order[];
 }
 
 export async function getAdminProducts(): Promise<Product[]> {
@@ -270,14 +295,31 @@ export async function getUserOrders() {
   const { createAdminClient } = await import('@/lib/supabase/admin');
   const admin = createAdminClient();
 
-  const { data, error } = await admin
+  // Fetch orders first
+  const { data: orders, error: ordersError } = await admin
     .from('orders')
-    .select('*, order_items(product_title_snapshot, price_snapshot, quantity)')
+    .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
-  if (error) return [];
-  return data ?? [];
+  if (ordersError || !orders) return [];
+
+  // Fetch order items
+  const orderIds = orders.map(o => o.id);
+  if (orderIds.length === 0) return [];
+
+  const { data: orderItems } = await admin
+    .from('order_items')
+    .select('order_id, product_title_snapshot, price_snapshot, quantity')
+    .in('order_id', orderIds);
+
+  // Attach items to orders
+  const ordersWithItems = orders.map(order => ({
+    ...order,
+    order_items: orderItems?.filter(item => item.order_id === order.id) || [],
+  }));
+
+  return ordersWithItems;
 }
 
 export async function getUserWishlist() {
