@@ -38,7 +38,8 @@ async function getFrequentlyBoughtTogether(productId: string, categoryId: string
       const topIds = Object.entries(freq)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 3)
-        .map(([id]) => id);
+        .map(([id]) => id)
+        .filter(id => typeof id === 'string' && id.length > 0); // Ensure valid IDs
 
       if (topIds.length > 0) {
         const { data: products } = await supabase
