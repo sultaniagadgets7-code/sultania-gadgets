@@ -6,6 +6,17 @@ import { PlusCircle } from 'lucide-react';
 
 export const metadata: Metadata = { title: 'Blog Posts' };
 
+// Void wrappers for form actions
+async function togglePublishedAction(id: string, published: boolean): Promise<void> {
+  'use server';
+  await toggleBlogPublished(id, published);
+}
+
+async function deletePostAction(id: string): Promise<void> {
+  'use server';
+  await deleteBlogPost(id);
+}
+
 export default async function AdminBlogPage() {
   const supabase = createAdminClient();
   const { data: posts } = await supabase
@@ -58,7 +69,7 @@ export default async function AdminBlogPage() {
                   <td className="px-4 py-3 hidden md:table-cell text-gray-600">{post.category || '—'}</td>
                   <td className="px-4 py-3 hidden md:table-cell text-gray-600">{post.views ?? 0}</td>
                   <td className="px-4 py-3">
-                    <form action={toggleBlogPublished.bind(null, post.id, !post.published)}>
+                    <form action={togglePublishedAction.bind(null, post.id, !post.published)}>
                       <button
                         type="submit"
                         className={`px-2.5 py-1 rounded-full text-xs font-bold ${
@@ -87,7 +98,7 @@ export default async function AdminBlogPage() {
                       >
                         View ↗
                       </a>
-                      <form action={deleteBlogPost.bind(null, post.id)}>
+                      <form action={deletePostAction.bind(null, post.id)}>
                         <button
                           type="submit"
                           className="text-red-500 hover:text-red-700 text-xs font-semibold"

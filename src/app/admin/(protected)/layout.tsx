@@ -33,31 +33,17 @@ const NAV_ITEMS = [
   { href: '/admin/settings',          icon: Settings,        label: 'Settings' },
 ];
 
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  // Skip auth check for login page
-  const { headers } = await import('next/headers');
-  const headersList = await headers();
-  const pathname = headersList.get('x-pathname') || '';
-  const isLoginPage = pathname === '/admin/login';
+export default async function AdminProtectedLayout({ children }: { children: React.ReactNode }) {
+  // Auth check — login page is outside this layout so no loop
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!isLoginPage) {
-    // Auth check for all admin pages except login
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      redirect('/admin/login');
-    }
-  }
-
-  // Login page — render without sidebar
-  if (isLoginPage) {
-    return <>{children}</>;
+  if (!user) {
+    redirect('/admin/login');
   }
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
-      {/* Sidebar */}
       <aside className="w-52 bg-gray-900 text-gray-300 flex flex-col shrink-0 hidden md:flex">
         <div className="p-4 border-b border-gray-800">
           <Link href="/admin" className="flex items-center gap-2 text-white font-bold text-sm">
@@ -67,11 +53,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto" aria-label="Admin navigation">
           {NAV_ITEMS.map(({ href, icon: Icon, label }) => (
-            <Link
-              key={href}
-              href={href}
-              className="flex items-center gap-2 px-3 py-2 rounded text-sm hover:bg-gray-800 hover:text-white transition-colors"
-            >
+            <Link key={href} href={href}
+              className="flex items-center gap-2 px-3 py-2 rounded text-sm hover:bg-gray-800 hover:text-white transition-colors">
               <Icon className="w-4 h-4" aria-hidden="true" />
               {label}
             </Link>
@@ -79,10 +62,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </nav>
         <div className="p-3 border-t border-gray-800">
           <form action={adminSignOut}>
-            <button
-              type="submit"
-              className="flex items-center gap-2 px-3 py-2 rounded text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-colors w-full"
-            >
+            <button type="submit"
+              className="flex items-center gap-2 px-3 py-2 rounded text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-colors w-full">
               <LogOut className="w-4 h-4" aria-hidden="true" />
               Sign Out
             </button>
@@ -90,9 +71,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
       </aside>
 
-      {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile top bar */}
         <div className="md:hidden bg-gray-900 text-white px-4 py-3 flex items-center justify-between">
           <Link href="/admin" className="flex items-center gap-2 font-bold text-sm">
             <Zap className="w-4 h-4 text-blue-400" aria-hidden="true" />
