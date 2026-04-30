@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import { headers } from 'next/headers';
 import './globals.css';
 import { TrustStrip } from '@/components/ui/TrustBadge';
 import { Navbar } from '@/components/layout/Navbar';
@@ -76,12 +77,21 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const [categories, settings] = await Promise.all([
-    getNavCategories().catch(() => []),
-    getSiteSettings().catch(() => null),
-  ]);
-  const wa = settings?.whatsapp_number || process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '923001234567';
-  const deliveryFee = settings?.delivery_fee ?? 200;
+  // Detect if this is an admin route — skip store UI entirely
+  const headersList = await headers();
+  const pathname = headersList.get('x-pathname') || headersList.get('x-invoke-path') || '';
+  const isAdmin = pathname.startsWith('/admin');
+
+  // Only fetch store data for non-admin routes
+  const [categories, settings] = isAdmin
+    ? [[], null]
+    : await Promise.all([
+        getNavCategories().catch(() => []),
+        getSiteSettings().catch(() => null),
+      ]);
+
+  const wa = (settings as { whatsapp_number?: string } | null)?.whatsapp_number || process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '923001234567';
+  const deliveryFee = (settings as { delivery_fee?: number } | null)?.delivery_fee ?? 200;
 
   return (
     <html lang="en">
@@ -165,20 +175,24 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         })}} />
         <MetaPixel />
 
+        {isAdmin ? (
+          // Admin routes — render children directly, no store UI
+          <>{children}</>
+        ) : (
         <LanguageProvider>
         <CompareProvider>
         <CartProvider>
           {/* Announcement bar — only if text is set */}
-          {settings?.announcement_text && (
+          {(settings as { announcement_text?: string } | null)?.announcement_text && (
             <div className="bg-[#e01e1e] text-white text-center py-2 px-4 text-xs font-semibold">
-              {settings.announcement_text}
+              {(settings as { announcement_text?: string }).announcement_text}
             </div>
           )}
           <TrustStrip />
-          <Navbar categories={categories} />
+          <Navbar categories={categories as import('@/types').Category[]} />
           <CartDrawer deliveryFee={deliveryFee} />
           <main className="flex-1 pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:pb-0">{children}</main>
-          <Footer whatsappNumber={wa} categories={categories} />
+          <Footer whatsappNumber={wa} categories={categories as import('@/types').Category[]} />
           <MobileTabBar />
           <ScrollToTop />
           <Suspense fallback={null}>
@@ -189,6 +203,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </CartProvider>
         </CompareProvider>
         </LanguageProvider>
+        )}
       </body>
     </html>
   );
