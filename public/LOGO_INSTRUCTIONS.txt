@@ -1,0 +1,38 @@
+LOGO FILES NEEDED - SULTANIA GADGETS
+=====================================
+
+Your logo with the lightning bolt is perfect! 
+
+STEP 1: Remove Background
+--------------------------
+Go to: https://www.remove.bg/
+Upload your logo image
+Download the PNG with transparent background
+
+STEP 2: Create Two Versions
+----------------------------
+1. logo.png
+   - Transparent background
+   - Red lightning bolt
+   - Black "SULTANIA" text
+   - Red "GADGETS" text
+
+2. logo-white.png
+   - Transparent background
+   - ALL WHITE (lightning + text)
+   - For use on dark backgrounds
+
+STEP 3: Add Files Here
+----------------------
+Place both files in this folder:
+- logo.png
+- logo-white.png
+
+STEP 4: Done!
+-------------
+Refresh your browser and the logo will appear!
+
+NEED HELP?
+----------
+Use remove.bg to remove background (free)
+Or share the transparent PNG and I'll help create the white version

@@ -2,7 +2,10 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 
-export const metadata: Metadata = { title: 'Confirming...' };
+export const metadata: Metadata = {
+  title: 'Confirming...',
+  robots: { index: false, follow: false },
+};
 
 export default async function AuthConfirmPage({
   searchParams,
@@ -16,7 +19,9 @@ export default async function AuthConfirmPage({
     const supabase = await createClient();
     const { error } = await supabase.auth.verifyOtp({ token_hash, type: type as 'email' | 'recovery' | 'signup' });
     if (!error) {
-      redirect(next || '/');
+      // For password recovery, go to the reset page; otherwise use next or home
+      const destination = type === 'recovery' ? '/auth/reset-password' : (next || '/');
+      redirect(destination);
     }
   }
 

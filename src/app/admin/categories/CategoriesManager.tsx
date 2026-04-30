@@ -7,10 +7,13 @@ import { createCategory, updateCategory, deleteCategory } from '@/lib/actions';
 import { slugify } from '@/lib/utils';
 import type { Category } from '@/types';
 
-const categoryIcons: Record<string, string> = {
-  chargers: '⚡', earbuds: '🎧', cables: '🔗',
-  accessories: '📱', 'power-banks': '🔋', adapters: '🔄',
-};
+// Common emojis for tech accessories
+const EMOJI_OPTIONS = [
+  '⚡', '🎧', '🔗', '📱', '🔋', '🔄', '💻', '🖥️', '⌨️', '🖱️',
+  '📷', '🎮', '🔌', '💡', '📡', '🛡️', '🎵', '📺', '⌚', '🔦',
+  '🧲', '💾', '📀', '🖨️', '📠', '☎️', '📟', '🔭', '🔬', '🧪',
+  '🎁', '🛒', '💎', '⭐', '🔥', '✨', '💫', '🌟', '🏆', '📦',
+];
 
 interface CategoriesManagerProps {
   categories: Category[];
@@ -21,9 +24,10 @@ interface FormState {
   slug: string;
   description: string;
   sort_order: string;
+  emoji: string;
 }
 
-const emptyForm: FormState = { name: '', slug: '', description: '', sort_order: '0' };
+const emptyForm: FormState = { name: '', slug: '', description: '', sort_order: '0', emoji: '📦' };
 
 export function CategoriesManager({ categories }: CategoriesManagerProps) {
   const router = useRouter();
@@ -33,12 +37,14 @@ export function CategoriesManager({ categories }: CategoriesManagerProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   function openAdd() {
     setForm(emptyForm);
     setEditingId(null);
     setError('');
     setShowAdd(true);
+    setShowEmojiPicker(false);
   }
 
   function openEdit(cat: Category) {
@@ -47,17 +53,18 @@ export function CategoriesManager({ categories }: CategoriesManagerProps) {
       slug: cat.slug,
       description: cat.description || '',
       sort_order: String(cat.sort_order),
+      emoji: cat.emoji || '📦',
     });
     setEditingId(cat.id);
     setShowAdd(false);
     setError('');
+    setShowEmojiPicker(false);
   }
 
   function handleNameChange(val: string) {
     setForm((prev) => ({
       ...prev,
       name: val,
-      // Auto-generate slug only when adding new
       ...(editingId ? {} : { slug: slugify(val) }),
     }));
   }
@@ -75,6 +82,7 @@ export function CategoriesManager({ categories }: CategoriesManagerProps) {
       slug: form.slug.trim(),
       description: form.description.trim(),
       sort_order: parseInt(form.sort_order) || 0,
+      emoji: form.emoji,
     };
 
     const result = editingId
@@ -85,6 +93,7 @@ export function CategoriesManager({ categories }: CategoriesManagerProps) {
       setShowAdd(false);
       setEditingId(null);
       setForm(emptyForm);
+      setShowEmojiPicker(false);
       router.refresh();
     } else {
       setError(result.error || 'Something went wrong.');
@@ -109,6 +118,7 @@ export function CategoriesManager({ categories }: CategoriesManagerProps) {
     setEditingId(null);
     setForm(emptyForm);
     setError('');
+    setShowEmojiPicker(false);
   }
 
   const inp = 'w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 transition';
@@ -126,6 +136,67 @@ export function CategoriesManager({ categories }: CategoriesManagerProps) {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+        {/* Emoji picker */}
+        <div className="sm:col-span-2">
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">
+            Emoji Icon
+          </label>
+          <div className="flex items-center gap-3">
+            {/* Current emoji display + toggle */}
+            <button
+              type="button"
+              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+              className="w-14 h-14 text-3xl bg-gray-50 border-2 border-gray-200 rounded-2xl flex items-center justify-center hover:border-gray-900 transition-colors"
+              title="Click to change emoji"
+            >
+              {form.emoji}
+            </button>
+            <div>
+              <p className="text-sm font-semibold text-gray-700">
+                {showEmojiPicker ? 'Select an emoji below' : 'Click to change emoji'}
+              </p>
+              <p className="text-xs text-gray-400 mt-0.5">Shown on category cards and navigation</p>
+            </div>
+          </div>
+
+          {/* Emoji grid */}
+          {showEmojiPicker && (
+            <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-2xl">
+              <div className="flex flex-wrap gap-1.5">
+                {EMOJI_OPTIONS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => {
+                      setForm({ ...form, emoji });
+                      setShowEmojiPicker(false);
+                    }}
+                    className={`w-10 h-10 text-xl rounded-xl flex items-center justify-center transition-all hover:scale-110 ${
+                      form.emoji === emoji
+                        ? 'bg-gray-900 ring-2 ring-gray-900 ring-offset-1'
+                        : 'bg-white hover:bg-gray-100 border border-gray-200'
+                    }`}
+                    title={emoji}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+              {/* Custom emoji input */}
+              <div className="mt-3 flex items-center gap-2">
+                <span className="text-xs text-gray-500 shrink-0">Or type custom:</span>
+                <input
+                  value={form.emoji}
+                  onChange={(e) => setForm({ ...form, emoji: e.target.value })}
+                  maxLength={4}
+                  placeholder="🔧"
+                  className="w-20 text-center text-xl bg-white border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-gray-900"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
         <div>
           <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">
             Name *
@@ -219,8 +290,8 @@ export function CategoriesManager({ categories }: CategoriesManagerProps) {
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2.5">
-                        <span className="text-lg" aria-hidden="true">
-                          {categoryIcons[cat.slug] || '📦'}
+                        <span className="text-2xl w-8 text-center" aria-hidden="true">
+                          {cat.emoji || '📦'}
                         </span>
                         <span className="font-semibold text-gray-900">{cat.name}</span>
                       </div>

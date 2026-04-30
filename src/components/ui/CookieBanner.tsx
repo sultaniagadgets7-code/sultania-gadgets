@@ -37,10 +37,10 @@ export function CookieBanner() {
         </p>
         <div className="flex items-center gap-3 shrink-0">
           <Link
-            href="/faq"
+            href="/privacy-policy"
             className="text-xs font-semibold text-gray-500 hover:text-gray-900 underline underline-offset-2 transition-colors"
           >
-            Learn More
+            Privacy Policy
           </Link>
           <button
             onClick={accept}

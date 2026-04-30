@@ -1,0 +1,22 @@
+PLACE YOUR FAVICON HERE
+========================
+
+Add your favicon.ico file to this folder:
+sultania-gadgets/src/app/favicon.ico
+
+QUICK STEPS:
+1. Go to https://realfavicongenerator.net/
+2. Upload your logo (lightning bolt)
+3. Download generated files
+4. Place favicon.ico HERE (in this folder)
+5. Place other files in /public folder
+
+MINIMUM REQUIRED:
+- favicon.ico (32×32px) - goes HERE
+
+RECOMMENDED:
+- favicon.ico - HERE
+- apple-icon.png - HERE
+- Other sizes - in /public folder
+
+The favicon will automatically appear in browser tabs!

@@ -38,15 +38,16 @@ export function ShareButtons({ title, url }: ShareButtonsProps) {
   }
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <span className="text-xs text-gray-400 font-semibold uppercase tracking-widest">Share:</span>
+    <div className="flex items-center gap-2 flex-wrap touch-manipulation">
+      <span className="text-xs text-[#94a3b8] font-semibold uppercase tracking-widest">Share:</span>
 
       <a
         href={whatsappUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-1.5 bg-[#f7f7f7] hover:bg-[#25D366] hover:text-white text-gray-600 text-xs font-semibold px-3 py-2 rounded-full transition-colors"
+        className="inline-flex items-center gap-1.5 bg-[#f8fafc] hover:bg-[#25D366] hover:text-white text-[#64748b] text-xs font-semibold px-3 py-2 rounded-full transition-colors touch-manipulation"
         aria-label="Share on WhatsApp"
+        style={{ touchAction: 'manipulation' }}
       >
         <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
         WhatsApp
@@ -54,12 +55,13 @@ export function ShareButtons({ title, url }: ShareButtonsProps) {
 
       <button
         onClick={handleCopy}
-        className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full transition-colors ${
+        className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full transition-colors touch-manipulation ${
           copied
             ? 'bg-green-100 text-green-700'
-            : 'bg-[#f7f7f7] hover:bg-gray-200 text-gray-600'
+            : 'bg-[#f8fafc] hover:bg-[#f1f5f9] text-[#64748b]'
         }`}
         aria-label="Copy product link"
+        style={{ touchAction: 'manipulation' }}
       >
         <Link2 className="w-3.5 h-3.5" aria-hidden="true" />
         {copied ? 'Copied!' : 'Copy Link'}
@@ -68,8 +70,9 @@ export function ShareButtons({ title, url }: ShareButtonsProps) {
       {typeof navigator !== 'undefined' && 'share' in navigator && (
         <button
           onClick={handleNativeShare}
-          className="inline-flex items-center gap-1.5 bg-[#f7f7f7] hover:bg-gray-200 text-gray-600 text-xs font-semibold px-3 py-2 rounded-full transition-colors"
+          className="inline-flex items-center gap-1.5 bg-[#f8fafc] hover:bg-[#f1f5f9] text-[#64748b] text-xs font-semibold px-3 py-2 rounded-full transition-colors touch-manipulation"
           aria-label="Share via native share"
+          style={{ touchAction: 'manipulation' }}
         >
           <Share2 className="w-3.5 h-3.5" aria-hidden="true" />
           Share

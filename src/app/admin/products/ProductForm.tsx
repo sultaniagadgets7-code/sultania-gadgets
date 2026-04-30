@@ -2,14 +2,12 @@
 
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { createProduct, updateProduct } from '@/lib/actions';
 import { slugify } from '@/lib/utils';
-import { createClient } from '@/lib/supabase/client';
 import type { Category, Product } from '@/types';
 import {
   AlertCircle, CheckCircle, Upload, X, ImagePlus,
-  GripVertical, ChevronDown, ChevronUp, Info,
+  GripVertical, ChevronDown, ChevronUp, Info, Plus, Trash2,
 } from 'lucide-react';
 
 interface ProductFormProps {
@@ -22,6 +20,11 @@ interface UploadedImage {
   alt: string;
   uploading?: boolean;
   error?: string;
+}
+
+interface Variation {
+  name: string;   // e.g. "Color", "Size", "Storage"
+  options: string; // comma-separated e.g. "Black, White, Red"
 }
 
 // ── Section wrapper ──────────────────────────────────────────
@@ -75,7 +78,6 @@ const inp = 'w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 t
 export function ProductForm({ categories, product }: ProductFormProps) {
   const router = useRouter();
   const isEdit = !!product;
-  const supabase = createClient();
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -87,26 +89,34 @@ export function ProductForm({ categories, product }: ProductFormProps) {
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Extract existing variations from specs_json
+  const existingSpecs = product?.specs_json as Record<string, unknown> | null;
+  const existingVariations = (existingSpecs?._variations as Variation[]) || [];
+  const [variations, setVariations] = useState<Variation[]>(
+    existingVariations.length > 0 ? existingVariations : []
+  );
+
   function handleTitleChange(val: string) {
     setTitle(val);
     if (!isEdit) setSlug(slugify(val));
   }
 
-  // ── Image upload ─────────────────────────────────────────
+  // ── Image upload → R2 ───────────────────────────────────
   async function uploadFile(file: File): Promise<string | null> {
-    const ext = file.name.split('.').pop();
-    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-    const { data, error } = await supabase.storage
-      .from('product-images')
-      .upload(fileName, file, { cacheControl: '3600', upsert: false });
-
-    if (error) { console.error('Upload error:', error); return null; }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('product-images')
-      .getPublicUrl(data.path);
-
-    return publicUrl;
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) {
+        console.error('Upload failed:', data.error);
+        return null;
+      }
+      return data.url;
+    } catch (err) {
+      console.error('Upload error:', err);
+      return null;
+    }
   }
 
   async function handleFiles(files: FileList | null) {
@@ -114,27 +124,31 @@ export function ProductForm({ categories, product }: ProductFormProps) {
     const validFiles = Array.from(files).filter((f) => f.type.startsWith('image/'));
     if (validFiles.length === 0) return;
 
-    // Add placeholders
-    const placeholders: UploadedImage[] = validFiles.map((f) => ({
-      url: URL.createObjectURL(f),
-      alt: title || f.name.replace(/\.[^.]+$/, ''),
-      uploading: true,
-    }));
-    setImages((prev) => [...prev, ...placeholders]);
+    // Upload each file sequentially with a unique key
+    for (const file of validFiles) {
+      const tempId = `uploading-${Date.now()}-${Math.random()}`;
 
-    // Upload each
-    for (let i = 0; i < validFiles.length; i++) {
-      const url = await uploadFile(validFiles[i]);
-      setImages((prev) => {
-        const updated = [...prev];
-        const idx = prev.length - validFiles.length + i;
-        if (url) {
-          updated[idx] = { url, alt: title || validFiles[i].name, uploading: false };
-        } else {
-          updated[idx] = { ...updated[idx], uploading: false, error: 'Upload failed' };
+      // Add placeholder
+      setImages((prev) => [...prev, {
+        url: URL.createObjectURL(file),
+        alt: title || file.name.replace(/\.[^.]+$/, ''),
+        uploading: true,
+        error: tempId, // use error field as temp ID
+      }]);
+
+      // Upload to R2
+      const url = await uploadFile(file);
+
+      setImages((prev) => prev.map((img) => {
+        if (img.error === tempId) {
+          if (url) {
+            return { url, alt: title || file.name, uploading: false };
+          } else {
+            return { ...img, uploading: false, error: 'Upload failed' };
+          }
         }
-        return updated;
-      });
+        return img;
+      }));
     }
   }
 
@@ -158,15 +172,42 @@ export function ProductForm({ categories, product }: ProductFormProps) {
   // ── Submit ───────────────────────────────────────────────
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    // Block save if images are still uploading
+    const stillUploading = images.some((img) => img.uploading);
+    if (stillUploading) {
+      setMessage({ type: 'error', text: 'Please wait for all images to finish uploading.' });
+      return;
+    }
+
     setLoading(true);
     setMessage(null);
 
     const formData = new FormData(e.currentTarget);
-    // Inject images as newline-separated URLs
-    const imageUrls = images.filter((img) => !img.uploading && !img.error).map((img) => img.url).join('\n');
+    // Only include fully uploaded images (have R2 URL, not uploading, no real error)
+    const imageUrls = images
+      .filter((img) => !img.uploading && img.url.startsWith('http'))
+      .map((img) => img.url)
+      .join('\n');
     formData.set('image_urls', imageUrls);
     formData.set('title', title);
     formData.set('slug', slug);
+
+    // Merge variations into specs_json
+    const specsRaw = formData.get('specs_json') as string;
+    let specs: Record<string, unknown> = {};
+    try { specs = specsRaw ? JSON.parse(specsRaw) : {}; } catch { specs = {}; }
+    const validVariations = variations.filter(v => v.name.trim() && v.options.trim());
+    if (validVariations.length > 0) {
+      specs._variations = validVariations;
+    } else {
+      delete specs._variations;
+    }
+    formData.set('specs_json', JSON.stringify(specs));
+    // Checkboxes only appear in FormData when checked — normalise to explicit true/false
+    formData.set('is_active', formData.has('is_active') ? 'true' : 'false');
+    formData.set('is_featured', formData.has('is_featured') ? 'true' : 'false');
+    formData.set('is_new_arrival', formData.has('is_new_arrival') ? 'true' : 'false');
 
     const result = isEdit
       ? await updateProduct(product!.id, formData)
@@ -230,13 +271,12 @@ export function ProductForm({ categories, product }: ProductFormProps) {
                 <div className={`relative aspect-square rounded-2xl overflow-hidden bg-gray-100 border-2 ${
                   i === 0 ? 'border-gray-900' : 'border-transparent'
                 }`}>
-                  <Image
+                  {/* Use regular img tag — works for both blob: and https: URLs */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
                     src={img.url}
                     alt={img.alt || `Image ${i + 1}`}
-                    fill
-                    className="object-contain p-2"
-                    sizes="150px"
-                    unoptimized={img.uploading}
+                    className="w-full h-full object-contain p-2"
                   />
                   {img.uploading && (
                     <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
@@ -246,9 +286,10 @@ export function ProductForm({ categories, product }: ProductFormProps) {
                       </svg>
                     </div>
                   )}
-                  {img.error && (
-                    <div className="absolute inset-0 bg-red-50/90 flex items-center justify-center">
-                      <p className="text-xs text-red-600 text-center px-2">{img.error}</p>
+                  {img.error && !img.uploading && (
+                    <div className="absolute inset-0 bg-red-50/95 flex flex-col items-center justify-center p-2">
+                      <p className="text-xs text-red-600 text-center font-semibold">❌ Upload failed</p>
+                      <p className="text-[10px] text-red-400 text-center mt-1">Open F12 console for details</p>
                     </div>
                   )}
                   {/* Primary badge */}
@@ -436,9 +477,55 @@ export function ProductForm({ categories, product }: ProductFormProps) {
         </div>
       </Section>
 
+      {/* ── VARIATIONS ─────────────────────────────────────── */}
+      <Section title="Variations" subtitle="Add color, size, storage options etc." defaultOpen={false}>
+        <div className="space-y-3">
+          {variations.map((v, i) => (
+            <div key={i} className="flex gap-2 items-start">
+              <div className="flex-1 grid grid-cols-2 gap-2">
+                <input
+                  value={v.name}
+                  onChange={(e) => setVariations(prev => prev.map((x, j) => j === i ? { ...x, name: e.target.value } : x))}
+                  placeholder="e.g. Color, Size, Storage"
+                  className={inp}
+                />
+                <input
+                  value={v.options}
+                  onChange={(e) => setVariations(prev => prev.map((x, j) => j === i ? { ...x, options: e.target.value } : x))}
+                  placeholder="e.g. Black, White, Red"
+                  className={inp}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setVariations(prev => prev.filter((_, j) => j !== i))}
+                className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-red-50 text-gray-300 hover:text-red-500 transition-colors mt-0.5"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+
+          <button
+            type="button"
+            onClick={() => setVariations(prev => [...prev, { name: '', options: '' }])}
+            className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-gray-900 px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Add Variation
+          </button>
+
+          {variations.length > 0 && (
+            <p className="text-xs text-gray-400">
+              Tip: Separate options with commas — e.g. "Black, White, Blue"
+            </p>
+          )}
+        </div>
+      </Section>
+
       {/* ── VISIBILITY ─────────────────────────────────────── */}
       <Section title="Visibility & Display" subtitle="Control where and how this product appears">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <label className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-gray-100 transition-colors">
             <input type="checkbox" name="is_active" value="true"
               defaultChecked={product?.is_active ?? true}
@@ -454,8 +541,18 @@ export function ProductForm({ categories, product }: ProductFormProps) {
               defaultChecked={product?.is_featured ?? false}
               className="w-4 h-4 mt-0.5 rounded accent-gray-900" />
             <div>
-              <p className="text-sm font-semibold text-gray-900">Featured on homepage</p>
-              <p className="text-xs text-gray-500 mt-0.5">Appears in the Featured Products carousel</p>
+              <p className="text-sm font-semibold text-gray-900">Featured Product</p>
+              <p className="text-xs text-gray-500 mt-0.5">Appears in the Featured Products section on homepage</p>
+            </div>
+          </label>
+
+          <label className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-gray-100 transition-colors">
+            <input type="checkbox" name="is_new_arrival" value="true"
+              defaultChecked={product?.is_new_arrival ?? false}
+              className="w-4 h-4 mt-0.5 rounded accent-gray-900" />
+            <div>
+              <p className="text-sm font-semibold text-gray-900">New Arrival</p>
+              <p className="text-xs text-gray-500 mt-0.5">Appears in the New Arrivals section on homepage</p>
             </div>
           </label>
         </div>
@@ -463,7 +560,18 @@ export function ProductForm({ categories, product }: ProductFormProps) {
 
       {/* ── SUBMIT ─────────────────────────────────────────── */}
       <div className="flex items-center gap-3 pt-2">
-        <button type="submit" disabled={loading}
+        {images.some(img => img.uploading) && (
+          <div className="w-full bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700 flex items-center gap-2 mb-2">
+            <svg className="animate-spin h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            Uploading images... please wait before saving.
+          </div>
+        )}
+      </div>
+      <div className="flex items-center gap-3 pt-2">
+        <button type="submit" disabled={loading || images.some(img => img.uploading)}
           className="flex items-center gap-2 bg-[#0a0a0a] hover:bg-gray-800 text-white font-bold text-xs uppercase tracking-widest px-8 py-3.5 rounded-full transition-colors disabled:opacity-50">
           {loading && (
             <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">

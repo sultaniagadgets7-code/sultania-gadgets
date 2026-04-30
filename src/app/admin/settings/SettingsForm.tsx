@@ -44,7 +44,7 @@ export function SettingsForm({ settings }: SettingsFormProps) {
       router.refresh();
       setTimeout(() => setSaved(false), 3000);
     } else {
-      setError('Failed to save settings.');
+      setError(result.error || 'Failed to save settings.');
     }
     setLoading(false);
   }

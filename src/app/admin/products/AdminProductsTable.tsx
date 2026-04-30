@@ -193,19 +193,31 @@ export function AdminProductsTable({ products }: AdminProductsTableProps) {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <button
-                        onClick={() => handleToggle(product.id, product.is_active)}
-                        disabled={togglingId === product.id}
-                        className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded transition-colors ${
-                          product.is_active
-                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                        }`}
-                        aria-label={product.is_active ? 'Deactivate product' : 'Activate product'}
-                      >
-                        {product.is_active ? <Eye className="w-3 h-3" aria-hidden="true" /> : <EyeOff className="w-3 h-3" aria-hidden="true" />}
-                        {product.is_active ? 'Active' : 'Hidden'}
-                      </button>
+                      <div className="flex flex-wrap gap-1">
+                        <button
+                          onClick={() => handleToggle(product.id, product.is_active)}
+                          disabled={togglingId === product.id}
+                          className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded transition-colors ${
+                            product.is_active
+                              ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                              : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                          }`}
+                          aria-label={product.is_active ? 'Deactivate product' : 'Activate product'}
+                        >
+                          {product.is_active ? <Eye className="w-3 h-3" aria-hidden="true" /> : <EyeOff className="w-3 h-3" aria-hidden="true" />}
+                          {product.is_active ? 'Active' : 'Hidden'}
+                        </button>
+                        {product.is_featured && (
+                          <span className="inline-flex items-center text-xs font-semibold px-2 py-1 rounded bg-yellow-100 text-yellow-700">
+                            Featured
+                          </span>
+                        )}
+                        {product.is_new_arrival && (
+                          <span className="inline-flex items-center text-xs font-semibold px-2 py-1 rounded bg-blue-100 text-blue-700">
+                            New
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">

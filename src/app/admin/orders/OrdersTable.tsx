@@ -3,10 +3,10 @@
 import { useState } from 'react';
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { updateOrderStatus, updateOrderNote } from '@/lib/actions';
+import { updateOrderStatus, updateOrderNote, updateOrderDispatch } from '@/lib/actions';
 import { formatPrice } from '@/lib/utils';
 import type { Order, OrderStatus } from '@/types';
-import { ChevronDown, ChevronUp, Download, MessageCircle, Save } from 'lucide-react';
+import { ChevronDown, ChevronUp, Download, MessageCircle, Save, Truck } from 'lucide-react';
 import { PrintSlip } from './PrintSlip';
 
 const STATUS_COLORS: Record<OrderStatus, string> = {
@@ -65,6 +65,8 @@ export function OrdersTable({ orders, initialStatus }: OrdersTableProps) {
   );
   const [savingNote, setSavingNote] = useState<string | null>(null);
   const [savedNote, setSavedNote] = useState<string | null>(null);
+  const [dispatchForm, setDispatchForm] = useState<Record<string, { courier: string; tracking: string }>>({});
+  const [dispatchingId, setDispatchingId] = useState<string | null>(null);
 
   const filtered = orders.filter((o) => {
     const matchStatus = statusFilter === 'all' || o.status === statusFilter;
@@ -91,6 +93,15 @@ export function OrdersTable({ orders, initialStatus }: OrdersTableProps) {
     setTimeout(() => setSavedNote(null), 2000);
   }
 
+  async function handleDispatch(orderId: string) {
+    const form = dispatchForm[orderId];
+    if (!form?.courier?.trim() || !form?.tracking?.trim()) return;
+    setDispatchingId(orderId);
+    await updateOrderDispatch(orderId, { courier: form.courier, tracking_number: form.tracking });
+    setDispatchingId(null);
+    router.refresh();
+  }
+
   return (
     <div>
       {/* Filters + Export */}
@@ -100,7 +111,7 @@ export function OrdersTable({ orders, initialStatus }: OrdersTableProps) {
           placeholder="Search by name, phone, or order ID..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 border border-gray-200 rounded-2xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
           aria-label="Search orders"
         />
         <select
@@ -111,7 +122,7 @@ export function OrdersTable({ orders, initialStatus }: OrdersTableProps) {
             if (e.target.value !== 'all') params.set('status', e.target.value);
             router.push(`/admin/orders?${params.toString()}`);
           }}
-          className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          className="border border-gray-200 rounded-2xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white"
           aria-label="Filter by status"
         >
           <option value="all">All Statuses</option>
@@ -130,7 +141,7 @@ export function OrdersTable({ orders, initialStatus }: OrdersTableProps) {
       </div>
 
       {/* Table */}
-      <div className="bg-white border border-gray-200 rounded overflow-hidden">
+      <div className="bg-white border border-gray-200 rounded-[20px] overflow-hidden">
         {filtered.length === 0 ? (
           <div className="p-8 text-center text-gray-500 text-sm">No orders found.</div>
         ) : (
@@ -165,7 +176,7 @@ export function OrdersTable({ orders, initialStatus }: OrdersTableProps) {
                           value={order.status}
                           onChange={(e) => handleStatusChange(order.id, e.target.value as OrderStatus)}
                           disabled={updatingId === order.id}
-                          className={`text-xs font-semibold px-2 py-1 rounded border-0 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer ${STATUS_COLORS[order.status]}`}
+                          className={`text-xs font-semibold px-2 py-1 rounded border-0 focus:outline-none focus:ring-1 focus:ring-gray-900 cursor-pointer ${STATUS_COLORS[order.status]}`}
                           aria-label={`Update status for order ${order.id.slice(0, 8)}`}
                         >
                           {STATUS_OPTIONS.map((s) => (
@@ -234,6 +245,43 @@ export function OrdersTable({ orders, initialStatus }: OrdersTableProps) {
                               </button>
                             </div>
                           </div>
+
+                          {/* Dispatch / Tracking */}
+                          {order.status === 'confirmed' || order.status === 'shipped' ? (
+                            <div className="mb-4">
+                              <p className="font-semibold text-gray-700 mb-1.5 text-sm flex items-center gap-1.5">
+                                <Truck className="w-3.5 h-3.5" /> Dispatch Order
+                              </p>
+                              {order.tracking_number ? (
+                                <p className="text-xs text-gray-500 bg-purple-50 border border-purple-100 rounded-xl px-3 py-2">
+                                  Dispatched via <strong>{order.courier}</strong> · Tracking: <strong>{order.tracking_number}</strong>
+                                </p>
+                              ) : (
+                                <div className="flex gap-2 flex-wrap">
+                                  <input
+                                    value={dispatchForm[order.id]?.courier ?? ''}
+                                    onChange={(e) => setDispatchForm({ ...dispatchForm, [order.id]: { ...dispatchForm[order.id], courier: e.target.value } })}
+                                    placeholder="Courier (e.g. TCS, Leopards)"
+                                    className="bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 w-40"
+                                  />
+                                  <input
+                                    value={dispatchForm[order.id]?.tracking ?? ''}
+                                    onChange={(e) => setDispatchForm({ ...dispatchForm, [order.id]: { ...dispatchForm[order.id], tracking: e.target.value } })}
+                                    placeholder="Tracking number"
+                                    className="bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 flex-1 min-w-32"
+                                  />
+                                  <button
+                                    onClick={() => handleDispatch(order.id)}
+                                    disabled={dispatchingId === order.id || !dispatchForm[order.id]?.courier || !dispatchForm[order.id]?.tracking}
+                                    className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest px-3 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white transition-colors disabled:opacity-40"
+                                  >
+                                    <Truck className="w-3.5 h-3.5" />
+                                    {dispatchingId === order.id ? 'Saving...' : 'Mark Dispatched'}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          ) : null}
 
                           {/* Action buttons */}
                           <div className="flex items-center gap-3 flex-wrap">

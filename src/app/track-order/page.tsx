@@ -2,8 +2,9 @@ import type { Metadata } from 'next';
 import { TrackOrderForm } from './TrackOrderForm';
 
 export const metadata: Metadata = {
-  title: 'Track Your Order',
-  description: 'Enter your phone number to track your Sultania Gadgets order status.',
+  title: 'Track Your Order — Sultania Gadgets',
+  description: 'Enter your phone number to track your Sultania Gadgets order status and delivery updates.',
+  alternates: { canonical: 'https://sultaniagadgets.com/track-order' },
 };
 
 export default function TrackOrderPage() {

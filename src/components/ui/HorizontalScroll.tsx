@@ -23,7 +23,7 @@ export function HorizontalScroll({ children, className, showArrows = true }: {
         </button>
       )}
       <div ref={ref}
-        className={cn('flex gap-4 overflow-x-auto no-scrollbar', className)}
+        className={cn('flex gap-4 overflow-x-auto no-scrollbar snap-scroll', className)}
         style={{ WebkitOverflowScrolling: 'touch' }}>
         {children}
       </div>

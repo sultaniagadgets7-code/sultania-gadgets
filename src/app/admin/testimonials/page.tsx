@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { TestimonialsManager } from './TestimonialsManager';
 import type { Testimonial } from '@/types';
 
 export const metadata: Metadata = { title: 'Testimonials' };
 
 export default async function AdminTestimonialsPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data } = await supabase
     .from('testimonials')
     .select('*')

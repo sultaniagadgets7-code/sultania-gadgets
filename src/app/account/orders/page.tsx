@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import { getUserOrders } from '@/lib/queries';
 import { formatPrice } from '@/lib/utils';
-import { ShoppingBag } from 'lucide-react';
+import { ShoppingBag, RefreshCw, Eye, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
+import { ReorderButton } from './ReorderButton';
 
 export const metadata: Metadata = { title: 'My Orders' };
 
@@ -19,10 +20,10 @@ export default async function OrdersPage() {
 
   if (!orders.length) return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
-      <ShoppingBag className="w-14 h-14 text-gray-200 mb-4" aria-hidden="true" />
-      <p className="font-semibold text-gray-500">No orders yet</p>
-      <p className="text-sm text-gray-400 mt-1 mb-6">Your orders will appear here once you place one.</p>
-      <Link href="/shop" className="bg-[#0a0a0a] text-white font-bold text-xs uppercase tracking-widest px-6 py-3 rounded-full hover:bg-gray-800 transition-colors">
+      <ShoppingBag className="w-14 h-14 text-[#e2e8f0] mb-4" aria-hidden="true" />
+      <p className="font-semibold text-[#64748b]">No orders yet</p>
+      <p className="text-sm text-[#94a3b8] mt-1 mb-6">Your orders will appear here once you place one.</p>
+      <Link href="/shop" className="bg-[#0f172a] text-white font-bold text-xs uppercase tracking-widest px-6 py-3 rounded-full hover:bg-[#1e293b] transition-colors touch-manipulation" style={{ touchAction: 'manipulation' }}>
         Start Shopping
       </Link>
     </div>
@@ -30,15 +31,15 @@ export default async function OrdersPage() {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-gray-400">{orders.length} order{orders.length !== 1 ? 's' : ''}</p>
+      <p className="text-sm text-[#94a3b8]">{orders.length} order{orders.length !== 1 ? 's' : ''}</p>
       {orders.map((order) => (
-        <div key={order.id} className="bg-[#f7f7f7] rounded-[20px] p-5">
+        <div key={order.id} className="bg-[#f8fafc] rounded-2xl p-5">
           <div className="flex items-start justify-between gap-3 mb-3">
             <div>
-              <p className="font-mono text-xs font-bold text-gray-950">{order.id.slice(0, 8).toUpperCase()}</p>
-              <p className="text-xs text-gray-400 mt-0.5">{new Date(order.created_at).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+              <p className="font-mono text-xs font-bold text-[#0f172a]">{order.id.slice(0, 8).toUpperCase()}</p>
+              <p className="text-xs text-[#94a3b8] mt-0.5">{new Date(order.created_at).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
             </div>
-            <span className={`text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full ${STATUS_STYLE[order.status] ?? 'bg-gray-100 text-gray-600'}`}>
+            <span className={`text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full ${STATUS_STYLE[order.status] ?? 'bg-[#f1f5f9] text-[#64748b]'}`}>
               {order.status}
             </span>
           </div>
@@ -46,16 +47,35 @@ export default async function OrdersPage() {
           {/* Items */}
           <div className="space-y-1 mb-3">
             {order.order_items?.map((item: { product_title_snapshot: string; quantity: number; price_snapshot: number }, i: number) => (
-              <div key={i} className="flex justify-between text-sm text-gray-600">
+              <div key={i} className="flex justify-between text-sm text-[#64748b]">
                 <span className="line-clamp-1">{item.product_title_snapshot} × {item.quantity}</span>
                 <span className="shrink-0 ml-2">{formatPrice(item.price_snapshot * item.quantity)}</span>
               </div>
             ))}
           </div>
 
-          <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
-            <p className="text-xs text-gray-400">{order.city} · COD</p>
-            <p className="font-black text-gray-950">{formatPrice(order.total)}</p>
+          <div className="border-t border-[#e2e8f0] pt-3 flex justify-between items-center flex-wrap gap-2">
+            <div className="flex items-center gap-3 flex-wrap">
+              <p className="text-xs text-[#94a3b8]">{order.city} · COD</p>
+              <Link
+                href={`/order/${order.id}`}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-[#0f172a] hover:text-[#64748b] transition-colors touch-target"
+                style={{ touchAction: 'manipulation' }}>
+                <Eye className="w-3 h-3" />
+                View
+              </Link>
+              {['confirmed', 'shipped', 'delivered'].includes(order.status) && (
+                <Link
+                  href={`/exchange-request?order=${order.id.slice(0, 8).toUpperCase()}`}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#dc2626] hover:text-[#b91c1c] transition-colors touch-target"
+                  style={{ touchAction: 'manipulation' }}>
+                  <RefreshCw className="w-3 h-3" />
+                  Exchange
+                </Link>
+              )}
+              <ReorderButton items={(order.order_items as any[]) ?? []} />
+            </div>
+            <p className="font-black text-[#0f172a]">{formatPrice(order.total)}</p>
           </div>
         </div>
       ))}

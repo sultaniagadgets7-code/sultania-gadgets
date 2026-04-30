@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Search, Package, CheckCircle, Truck, Clock, XCircle } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
 import { formatPrice } from '@/lib/utils';
 
 interface OrderRow {
@@ -29,48 +28,96 @@ export function TrackOrderForm() {
   const [loading, setLoading] = useState(false);
   const [orders, setOrders] = useState<OrderRow[] | null>(null);
   const [error, setError] = useState('');
+  const [mode, setMode] = useState<'phone' | 'id'>('phone');
+  const [orderId, setOrderId] = useState('');
 
-  async function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
-    if (!phone.trim()) return;
+  async function search(payload: { phone?: string; orderId?: string }) {
     setLoading(true);
     setError('');
     setOrders(null);
 
-    const supabase = createClient();
-    const cleaned = phone.replace(/\s/g, '');
+    try {
+      const res = await fetch('/api/track-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
 
-    const { data, error: err } = await supabase
-      .from('orders')
-      .select('id, customer_name, status, total, created_at, city, order_items(product_title_snapshot, quantity)')
-      .eq('phone', cleaned)
-      .order('created_at', { ascending: false });
-
-    if (err) { setError('Something went wrong. Please try again.'); setLoading(false); return; }
-    if (!data || data.length === 0) {
-      setError('No orders found for this phone number.');
-    } else {
-      setOrders(data as OrderRow[]);
+      if (data.error) {
+        setError(data.error);
+      } else if (!data.orders || data.orders.length === 0) {
+        setError(
+          payload.phone
+            ? 'No orders found for this phone number. Make sure you enter the same number used during checkout.'
+            : 'No order found with this ID. Please check and try again.'
+        );
+      } else {
+        setOrders(data.orders as OrderRow[]);
+      }
+    } catch {
+      setError('Something went wrong. Please try again.');
     }
     setLoading(false);
+  }
+
+  function handlePhoneSearch(e: React.FormEvent) {
+    e.preventDefault();
+    if (!phone.trim()) return;
+    search({ phone: phone.trim() });
+  }
+
+  function handleIdSearch(e: React.FormEvent) {
+    e.preventDefault();
+    if (!orderId.trim()) return;
+    search({ orderId: orderId.trim() });
   }
 
   const inp = 'w-full bg-[#f7f7f7] border-0 rounded-2xl px-4 py-3.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-950 transition';
 
   return (
     <div>
-      <form onSubmit={handleSearch} className="flex gap-2 mb-6">
-        <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
-          placeholder="03XX-XXXXXXX" className={`${inp} flex-1`} autoComplete="tel"
-          aria-label="Phone number" />
-        <button type="submit" disabled={loading || !phone.trim()}
-          className="flex items-center gap-2 bg-[#0a0a0a] hover:bg-gray-800 text-white font-bold text-xs uppercase tracking-widest px-5 rounded-2xl transition-colors disabled:opacity-40 shrink-0">
-          {loading
-            ? <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-            : <Search className="w-4 h-4" />}
-          {loading ? '' : 'Track'}
+      {/* Toggle */}
+      <div className="flex bg-[#f7f7f7] rounded-2xl p-1 mb-5">
+        <button type="button" onClick={() => { setMode('phone'); setOrders(null); setError(''); }}
+          className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-widest rounded-xl transition-colors ${mode === 'phone' ? 'bg-white text-gray-950 shadow-sm' : 'text-gray-400'}`}>
+          By Phone
         </button>
-      </form>
+        <button type="button" onClick={() => { setMode('id'); setOrders(null); setError(''); }}
+          className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-widest rounded-xl transition-colors ${mode === 'id' ? 'bg-white text-gray-950 shadow-sm' : 'text-gray-400'}`}>
+          By Order ID
+        </button>
+      </div>
+
+      {mode === 'phone' ? (
+        <form onSubmit={handlePhoneSearch} className="flex gap-2 mb-6">
+          <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
+            placeholder="03XX-XXXXXXX" className={`${inp} flex-1`} autoComplete="tel"
+            aria-label="Phone number" />
+          <button type="submit" disabled={loading || !phone.trim()}
+            className="flex items-center gap-2 bg-[#0a0a0a] hover:bg-gray-800 text-white font-bold text-xs uppercase tracking-widest px-5 rounded-2xl transition-colors disabled:opacity-40 shrink-0 touch-manipulation"
+            style={{ touchAction: 'manipulation' }}>
+            {loading
+              ? <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+              : <Search className="w-4 h-4" />}
+            {loading ? '' : 'Track'}
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={handleIdSearch} className="flex gap-2 mb-6">
+          <input value={orderId} onChange={(e) => setOrderId(e.target.value)}
+            placeholder="Order ID (e.g. ABC12345)" className={`${inp} flex-1`}
+            aria-label="Order ID" />
+          <button type="submit" disabled={loading || !orderId.trim()}
+            className="flex items-center gap-2 bg-[#0a0a0a] hover:bg-gray-800 text-white font-bold text-xs uppercase tracking-widest px-5 rounded-2xl transition-colors disabled:opacity-40 shrink-0 touch-manipulation"
+            style={{ touchAction: 'manipulation' }}>
+            {loading
+              ? <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+              : <Search className="w-4 h-4" />}
+            {loading ? '' : 'Find'}
+          </button>
+        </form>
+      )}
 
       {error && (
         <div className="bg-red-50 border border-red-100 rounded-2xl p-4 text-sm text-red-600 text-center mb-4">
@@ -86,12 +133,12 @@ export function TrackOrderForm() {
           {orders.map((order) => {
             const cfg = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.pending;
             const Icon = cfg.icon;
-            const orderId = order.id.slice(0, 8).toUpperCase();
+            const shortId = order.id.slice(0, 8).toUpperCase();
             return (
               <div key={order.id} className="bg-[#f7f7f7] rounded-[20px] p-5">
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
-                    <p className="font-mono text-sm font-bold text-gray-950">#{orderId}</p>
+                    <p className="font-mono text-sm font-bold text-gray-950">#{shortId}</p>
                     <p className="text-xs text-gray-400 mt-0.5">
                       {new Date(order.created_at).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}
                       {' · '}{order.city}

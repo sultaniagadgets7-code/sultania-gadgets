@@ -3,12 +3,17 @@ import Link from 'next/link';
 import { getProducts, getCategories } from '@/lib/queries';
 import { ProductGrid } from '@/components/products/ProductGrid';
 import { CategoryCarousel } from '@/components/ui/CategoryCarousel';
+import { CountdownTimer } from '@/components/ui/CountdownTimer';
 import { formatPrice, getDiscountPercent } from '@/lib/utils';
 import { Tag, Zap, Clock } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Deals & Discounts — Sultania Gadgets',
-  description: 'Best deals on chargers, earbuds, cables and accessories. Limited time offers with cash on delivery.',
+  title: 'Deals & Discounts — Sultania Gadgets Pakistan',
+  description: 'Best deals on chargers, earbuds, cables and accessories in Pakistan. Up to 50% off. Cash on delivery nationwide. Tested before dispatch.',
+  keywords: ['tech deals pakistan', 'charger discount pakistan', 'earbuds sale pakistan', 'mobile accessories deals cod'],
+  openGraph: { title: 'Deals & Discounts — Sultania Gadgets', description: 'Best deals on tech accessories. COD across Pakistan.', url: 'https://sultaniagadgets.com/deals', type: 'website' },
+  twitter: { card: 'summary_large_image', title: 'Deals & Discounts — Sultania Gadgets', description: 'Best deals on tech accessories. COD across Pakistan.' },
+  alternates: { canonical: 'https://sultaniagadgets.com/deals' },
 };
 
 export default async function DealsPage() {
@@ -59,6 +64,19 @@ export default async function DealsPage() {
               Genuine products at reduced prices. Cash on delivery. Tested before dispatch.
             </p>
 
+            {/* Coupon Promo Banner */}
+            <div className="bg-gradient-to-r from-[#e01e1e]/20 to-transparent border border-[#e01e1e]/30 rounded-2xl p-4 mb-6 max-w-md mx-auto">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 bg-[#e01e1e] rounded-xl flex items-center justify-center shrink-0">
+                  <Tag className="w-5 h-5 text-white" />
+                </div>
+                <div className="text-left">
+                  <p className="text-white font-bold text-sm mb-1">Have a coupon code?</p>
+                  <p className="text-gray-400 text-xs">Apply it at checkout for extra savings on top of these deals!</p>
+                </div>
+              </div>
+            </div>
+
             {/* Stats */}
             <div className="flex justify-center gap-8">
               <div className="text-center">
@@ -76,6 +94,11 @@ export default async function DealsPage() {
                 <p className="text-xs text-gray-500 uppercase tracking-widest mt-0.5">Total Savings</p>
               </div>
             </div>
+
+            {/* Countdown */}
+            <div className="mt-6 flex justify-center">
+              <CountdownTimer label="Deals reset in" hours={24} />
+            </div>
           </div>
         </div>
       </section>
@@ -83,7 +106,7 @@ export default async function DealsPage() {
       {/* Trust bar */}
       <div className="bg-[#e01e1e] py-3">
         <div className="flex justify-center flex-wrap gap-x-8 gap-y-1 px-4">
-          {['All prices include delivery', 'Cash on Delivery', 'Tested before dispatch', 'Easy exchange'].map((t) => (
+          {['Rs. 200 flat delivery fee', 'Cash on Delivery', 'Tested before dispatch', 'Easy exchange'].map((t) => (
             <span key={t} className="text-white text-xs font-semibold uppercase tracking-widest flex items-center gap-1.5">
               <span className="w-1 h-1 rounded-full bg-red-300 inline-block" />
               {t}
@@ -130,9 +153,9 @@ export default async function DealsPage() {
       {sorted.length > 0 && (
         <section className="bg-[#f7f7f7] py-12 px-5 text-center">
           <p className="label text-gray-400 mb-2">Don&apos;t miss out</p>
-          <h2 className="heading-xl mb-3">All deals include Cash on Delivery</h2>
+          <h2 className="heading-xl mb-3">All deals — Cash on Delivery</h2>
           <p className="text-gray-500 text-sm mb-6 max-w-sm mx-auto">
-            No advance payment. Pay when your order arrives at your door.
+            Rs. 200 flat delivery fee. Pay when your order arrives at your door.
           </p>
           <Link href="/shop"
             className="inline-flex items-center bg-[#0a0a0a] hover:bg-gray-800 text-white font-bold text-xs uppercase tracking-widest px-7 py-3.5 rounded-full transition-colors">

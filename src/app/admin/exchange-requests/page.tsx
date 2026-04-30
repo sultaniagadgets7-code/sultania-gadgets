@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { ExchangeRequestsTable } from './ExchangeRequestsTable';
 
 export const metadata: Metadata = { title: 'Exchange Requests' };
 
 export default async function ExchangeRequestsPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data } = await supabase
     .from('exchange_requests')
     .select('*')

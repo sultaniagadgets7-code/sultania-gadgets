@@ -1,70 +1,252 @@
 @import "tailwindcss";
 
-/* ── Brand Tokens ──────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════
+   BRAND TOKENS
+══════════════════════════════════════════════════════════════ */
 :root {
-  --brand-red:    #e01e1e;
-  --brand-red-dk: #c01818;
-  --brand-red-lt: #fff0f0;
-  --brand-black:  #0a0a0a;
+  --brand-red:    #dc2626;
+  --brand-red-dk: #b91c1c;
+  --brand-red-lt: #fef2f2;
+  --brand-black:  #0a0a0f;
   --brand-white:  #ffffff;
-  --c-surface:    #f7f7f7;
-  --c-border:     #f0f0f0;
-  --c-muted:      #6b7280;
+  --c-surface:    #f8fafc;
+  --c-border:     #e2e8f0;
+  --c-muted:      #64748b;
+  /* Safe area insets */
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
 }
 
-/* ── Base ──────────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════
+   BASE RESET
+══════════════════════════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   background: var(--brand-white);
   color: var(--brand-black);
-  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.6;
-}
-
-/* ── Mobile overflow fix ───────────────────────────────────── */
-html, body {
+  font-size: 16px;
   overflow-x: hidden;
-  max-width: 100vw;
+  /* Do NOT set max-width on body — breaks safe area on iOS */
+  position: relative;
+  width: 100%;
 }
 
-/* ── Typography — mobile-safe sizes ───────────────────────── */
-.display    { font-size: clamp(2rem, 8vw, 5rem);    font-weight:800; line-height:1.05; letter-spacing:-0.03em; }
-.heading-xl { font-size: clamp(1.5rem, 5vw, 2.5rem); font-weight:700; line-height:1.1;  letter-spacing:-0.02em; }
-.heading-lg { font-size: clamp(1.1rem, 4vw, 1.75rem);font-weight:700; line-height:1.2;  letter-spacing:-0.015em; }
-.label      { font-size:0.6875rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; }
+/* ══════════════════════════════════════════════════════════════
+   TOUCH & INTERACTION
+══════════════════════════════════════════════════════════════ */
+button, a, [role="button"], input[type="button"], input[type="submit"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+}
 
-/* ── Scrollbar hide ────────────────────────────────────────── */
+/* iOS button appearance reset */
+button, input[type="button"], input[type="submit"], input[type="reset"] {
+  -webkit-appearance: none;
+}
+
+/* iOS input appearance reset */
+input[type="text"], input[type="email"], input[type="tel"],
+input[type="number"], input[type="search"], input[type="password"],
+textarea, select {
+  -webkit-appearance: none;
+  font-size: 16px !important; /* Prevents iOS zoom on focus */
+}
+
+input:focus, textarea:focus, select:focus { font-size: 16px; }
+
+input::placeholder, textarea::placeholder { color: #9ca3af; }
+
+a { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+
+/* Minimum touch targets — Apple HIG & Material Design */
+@media (max-width: 768px) {
+  button, a[role="button"], .touch-target,
+  input[type="button"], input[type="submit"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Android coarse pointer */
+@media (pointer: coarse) {
+  * { -webkit-tap-highlight-color: transparent; }
+}
+
+/* Prevent text selection on interactive elements */
+@media (max-width: 768px) {
+  button, .no-select { -webkit-user-select: none; user-select: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SAFE AREA SUPPORT (iPhone notch / Dynamic Island / Android)
+══════════════════════════════════════════════════════════════ */
+.safe-pb  { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.safe-pt  { padding-top:    env(safe-area-inset-top, 0px); }
+.safe-pl  { padding-left:   env(safe-area-inset-left, 0px); }
+.safe-pr  { padding-right:  env(safe-area-inset-right, 0px); }
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+  .safe-area-top    { padding-top:    env(safe-area-inset-top); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TYPOGRAPHY
+══════════════════════════════════════════════════════════════ */
+.display    { font-size: clamp(1.75rem, 7vw, 5rem);   font-weight:900; line-height:1.0;  letter-spacing:-0.04em; }
+.heading-xl { font-size: clamp(1.4rem,  5vw, 2.5rem); font-weight:800; line-height:1.1;  letter-spacing:-0.03em; }
+.heading-lg { font-size: clamp(1.1rem,  4vw, 1.75rem);font-weight:800; line-height:1.2;  letter-spacing:-0.02em; }
+.label      { font-size:0.6875rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; }
+
+/* ══════════════════════════════════════════════════════════════
+   SCROLLBAR
+══════════════════════════════════════════════════════════════ */
 .no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
 
-/* Hide scrollbar on any overflow-x-auto element on mobile */
 @media (max-width: 768px) {
   [style*="overflow-x"]::-webkit-scrollbar,
   .overflow-x-auto::-webkit-scrollbar { display: none; }
+  .overflow-x-auto { -webkit-overflow-scrolling: touch; }
 }
 
 .clamp-1 { overflow:hidden; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; }
 .clamp-2 { overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
 
-.safe-pb { padding-bottom: env(safe-area-inset-bottom, 0px); }
+/* ══════════════════════════════════════════════════════════════
+   CAROUSEL FADE
+══════════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+  .carousel-fade-right {
+    -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+    mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  }
+}
 
-/* ── Card image zoom ───────────────────────────────────────── */
-.card-img { transition: transform 0.5s cubic-bezier(0.25,0.46,0.45,0.94); }
-.card-root:hover .card-img { transform: scale(1.06); }
+/* ══════════════════════════════════════════════════════════════
+   MOBILE CAROUSEL — snap scrolling for better swipe feel
+══════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  .snap-scroll {
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .snap-scroll > * {
+    scroll-snap-align: start;
+  }
+}
 
-/* ── Animations ────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════
+   3D CARD SYSTEM
+══════════════════════════════════════════════════════════════ */
+.card-root {
+  transform-style: preserve-3d;
+  transition: transform 0.35s cubic-bezier(0.23, 1, 0.32, 1),
+              box-shadow 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.04),
+    0 4px 12px rgba(0,0,0,0.06),
+    0 0 0 1px rgba(0,0,0,0.04);
+}
+
+@media (hover: hover) {
+  .card-root:hover {
+    transform: translateY(-6px) rotateX(2deg) rotateY(-1deg);
+    box-shadow:
+      0 2px 4px rgba(0,0,0,0.04),
+      0 12px 32px rgba(0,0,0,0.12),
+      0 24px 48px rgba(220,38,38,0.08),
+      0 0 0 1px rgba(220,38,38,0.1);
+  }
+}
+
+.card-img {
+  transition: transform 0.5s cubic-bezier(0.25,0.46,0.45,0.94);
+  will-change: transform;
+}
+.card-root:hover .card-img { transform: scale(1.08); }
+
+@media (hover: none) {
+  .card-root:hover .card-img { transform: scale(1); }
+  .card-root:hover { transform: none; box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   3D BUTTON EFFECTS
+══════════════════════════════════════════════════════════════ */
+.btn-3d {
+  position: relative;
+  transform: translateY(0);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 4px 0 #991b1b, 0 6px 16px rgba(220,38,38,0.35);
+}
+.btn-3d:hover  { transform: translateY(-2px); box-shadow: 0 6px 0 #991b1b, 0 10px 24px rgba(220,38,38,0.45); }
+.btn-3d:active { transform: translateY(2px);  box-shadow: 0 2px 0 #991b1b, 0 4px 8px rgba(220,38,38,0.25); }
+
+.btn-3d-dark {
+  position: relative;
+  transform: translateY(0);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.5), 0 6px 16px rgba(0,0,0,0.3);
+}
+.btn-3d-dark:hover  { transform: translateY(-2px); box-shadow: 0 6px 0 rgba(0,0,0,0.6), 0 10px 24px rgba(0,0,0,0.4); }
+.btn-3d-dark:active { transform: translateY(2px);  box-shadow: 0 2px 0 rgba(0,0,0,0.4), 0 4px 8px rgba(0,0,0,0.2); }
+
+/* ══════════════════════════════════════════════════════════════
+   HERO 3D EFFECT — blackish red gradient
+══════════════════════════════════════════════════════════════ */
+.hero-bg {
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -10%, rgba(220,38,38,0.35) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 60% at 80% 50%, rgba(153,27,27,0.2) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 80% at 20% 80%, rgba(100,10,10,0.25) 0%, transparent 50%),
+    linear-gradient(160deg, #1a0505 0%, #0a0a0f 40%, #0f0505 70%, #1a0000 100%);
+}
+
+.hero-3d-text {
+  text-shadow:
+    0 1px 0 rgba(255,255,255,0.1),
+    0 2px 4px rgba(0,0,0,0.5),
+    0 8px 24px rgba(0,0,0,0.4);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   GLOW EFFECTS
+══════════════════════════════════════════════════════════════ */
+.glow-red       { box-shadow: 0 0 20px rgba(220,38,38,0.4), 0 0 40px rgba(220,38,38,0.2); }
+.glow-red:hover { box-shadow: 0 0 30px rgba(220,38,38,0.6), 0 0 60px rgba(220,38,38,0.3); }
+
+/* ══════════════════════════════════════════════════════════════
+   ANIMATIONS
+══════════════════════════════════════════════════════════════ */
 @keyframes fadeUp {
-  from { opacity:0; transform:translateY(16px); }
+  from { opacity:0; transform:translateY(20px); }
   to   { opacity:1; transform:translateY(0); }
 }
-.fade-up { animation: fadeUp 0.4s cubic-bezier(0.25,0.46,0.45,0.94) both; }
-
-@keyframes marquee {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
+.fade-up {
+  animation: fadeUp 0.4s cubic-bezier(0.25,0.46,0.45,0.94) both;
+  will-change: transform, opacity;
 }
 
 @keyframes marquee {
@@ -73,9 +255,177 @@ html, body {
 }
 
 @keyframes fireGlow {
-  0%, 100% { box-shadow: 0 0 6px 2px rgba(224,30,30,0.5), 0 0 14px 4px rgba(255,80,0,0.25); }
-  50%       { box-shadow: 0 0 14px 4px rgba(224,30,30,0.85), 0 0 28px 8px rgba(255,80,0,0.45); }
+  0%, 100% { box-shadow: 0 0 8px 3px rgba(220,38,38,0.6), 0 0 20px 6px rgba(251,146,60,0.3); }
+  50%       { box-shadow: 0 0 18px 6px rgba(220,38,38,0.9), 0 0 36px 10px rgba(251,146,60,0.5); }
 }
-.fire-glow {
-  animation: fireGlow 1.8s ease-in-out infinite;
+.fire-glow { animation: fireGlow 1.8s ease-in-out infinite; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
 }
+.float { animation: float 3s ease-in-out infinite; }
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 50%, transparent 100%);
+  background-size: 200% auto;
+  animation: shimmer 2.5s linear infinite;
+}
+
+@keyframes pulse-red {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.4); }
+  50%       { box-shadow: 0 0 0 8px rgba(220,38,38,0); }
+}
+.pulse-red { animation: pulse-red 2s ease-in-out infinite; }
+
+/* ══════════════════════════════════════════════════════════════
+   REDUCED MOTION
+══════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .card-root:hover { transform: none; }
+  .btn-3d:hover, .btn-3d:active { transform: none; }
+  .btn-3d-dark:hover, .btn-3d-dark:active { transform: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MOBILE — LAYOUT & SPACING
+══════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  /* Tighter horizontal padding on small screens */
+  .px-mobile { padding-left: 1rem; padding-right: 1rem; }
+  /* Reduce section vertical padding */
+  .py-mobile { padding-top: 2.5rem; padding-bottom: 2.5rem; }
+  /* Full-width buttons on mobile */
+  .btn-mobile-full { width: 100%; justify-content: center; }
+
+  /* Prevent horizontal overflow */
+  html, body { overflow-x: hidden; }
+
+  /* Fix hero text on very small screens */
+  .display {
+    font-size: clamp(1.5rem, 7.5vw, 2.5rem);
+    word-break: break-word;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MOBILE — FORMS
+══════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .mobile-input     { padding: 14px 16px; font-size: 16px; }
+  select.mobile-select { padding: 12px; font-size: 16px; -webkit-appearance: menulist; }
+  input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; }
+  .cart-drawer-toggle { min-width: 48px; min-height: 48px; }
+  .product-card { touch-action: pan-y; }
+  .product-card button { min-width: 44px; min-height: 44px; }
+  :focus-visible { outline: 2px solid #dc2626; outline-offset: 2px; }
+  .responsive-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .mobile-menu-item { min-height: 48px; display: flex; align-items: center; }
+  .mobile-dropdown  { position: static; width: 100%; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   IMAGES
+══════════════════════════════════════════════════════════════ */
+img { content-visibility: auto; max-width: 100%; height: auto; }
+
+/* ══════════════════════════════════════════════════════════════
+   PWA
+══════════════════════════════════════════════════════════════ */
+@media (display-mode: standalone) { body { margin: 0; } }
+
+/* ══════════════════════════════════════════════════════════════
+   PERFORMANCE
+══════════════════════════════════════════════════════════════ */
+.gpu-accelerate { transform: translateZ(0); backface-visibility: hidden; perspective: 1000px; }
+.smooth-scroll  { -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
+
+/* ══════════════════════════════════════════════════════════════
+   ACCESSIBILITY
+══════════════════════════════════════════════════════════════ */
+.skip-link {
+  position: absolute; top: -40px; left: 0;
+  background: #dc2626; color: white; padding: 8px; z-index: 100; transition: top 0.3s;
+}
+.skip-link:focus { top: 0; }
+
+/* ══════════════════════════════════════════════════════════════
+   GLASSMORPHISM
+══════════════════════════════════════════════════════════════ */
+.glass {
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+.glass-dark {
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   GRADIENT TEXT
+══════════════════════════════════════════════════════════════ */
+.text-gradient-red {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 40%, #f97316 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.text-gradient-white {
+  background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BLOG CONTENT
+══════════════════════════════════════════════════════════════ */
+.blog-content { font-size: 1rem; line-height: 1.8; color: #64748b; }
+.blog-content h1, .blog-content h2, .blog-content h3, .blog-content h4 {
+  font-weight: 800; color: #0a0a0f; line-height: 1.2; margin-top: 2rem; margin-bottom: 0.75rem;
+}
+.blog-content h1 { font-size: clamp(1.5rem, 4vw, 2rem); }
+.blog-content h2 { font-size: clamp(1.25rem, 3vw, 1.5rem); }
+.blog-content h3 { font-size: 1.125rem; }
+.blog-content p  { margin-bottom: 1.25rem; }
+.blog-content a  { color: #dc2626; text-decoration: underline; text-underline-offset: 3px; }
+.blog-content a:hover { color: #b91c1c; }
+.blog-content ul, .blog-content ol { padding-left: 1.5rem; margin-bottom: 1.25rem; }
+.blog-content ul { list-style-type: disc; }
+.blog-content ol { list-style-type: decimal; }
+.blog-content li { margin-bottom: 0.4rem; }
+.blog-content blockquote {
+  border-left: 4px solid #dc2626; padding-left: 1rem; margin: 1.5rem 0;
+  color: #64748b; font-style: italic;
+}
+.blog-content img { max-width: 100%; height: auto; border-radius: 12px; margin: 1.5rem 0; }
+.blog-content pre {
+  background: #0a0a0f; border-radius: 12px; padding: 1rem;
+  overflow-x: auto; font-size: 0.875rem; margin-bottom: 1.25rem; color: #e2e8f0;
+}
+.blog-content code {
+  background: #f1f5f9; padding: 0.15rem 0.4rem;
+  border-radius: 4px; font-size: 0.875rem;
+}
+.blog-content pre code { background: none; padding: 0; color: inherit; }
+.blog-content table { width: 100%; border-collapse: collapse; margin-bottom: 1.25rem; }
+.blog-content th, .blog-content td {
+  border: 1px solid #e2e8f0; padding: 0.5rem 0.75rem; text-align: left;
+}
+.blog-content th { background: #f8fafc; font-weight: 700; }
+.blog-content strong { font-weight: 800; color: #0a0a0f; }
+.blog-content hr { border: none; border-top: 1px solid #e2e8f0; margin: 2rem 0; }

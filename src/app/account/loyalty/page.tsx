@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
-import { redirect } from 'next/navigation';
 import { Star, TrendingUp, Gift } from 'lucide-react';
 
 export const metadata: Metadata = { title: 'Loyalty Points' };
@@ -8,7 +7,8 @@ export const metadata: Metadata = { title: 'Loyalty Points' };
 export default async function LoyaltyPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/');
+  // Auth guard is handled by account/layout.tsx — no redirect needed here
+  if (!user) return null;
 
   const [{ data: points }, { data: transactions }] = await Promise.all([
     supabase.from('loyalty_points').select('*').eq('user_id', user.id).single(),

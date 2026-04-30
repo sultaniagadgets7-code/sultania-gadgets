@@ -2,25 +2,33 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle, MessageCircle, Package, Truck, MapPin, Phone } from 'lucide-react';
-import { createClient } from '@/lib/supabase/server';
 import { getSiteSettings } from '@/lib/queries';
 import { formatPrice, getWhatsAppUrl } from '@/lib/utils';
 
-export const metadata: Metadata = { title: 'Order Confirmed' };
+export const metadata: Metadata = {
+  title: 'Order Confirmed',
+  robots: { index: false, follow: false },
+};
 
 const STATUS_STEPS = ['pending', 'confirmed', 'shipped', 'delivered'];
 
 export default async function OrderConfirmationPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = await createClient();
+  
+  // Use admin client (service role) to bypass RLS — order UUID is unguessable
+  const { createAdminClient } = await import('@/lib/supabase/admin');
+  const supabase = createAdminClient();
 
   const { data: order } = await supabase
     .from('orders')
     .select('*, order_items(product_title_snapshot, price_snapshot, quantity)')
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
-  if (!order) notFound();
+  // If order not found or error, return 404
+  if (!order) {
+    notFound();
+  }
 
   const settings = await getSiteSettings();
   const wa = settings?.whatsapp_number || process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '923001234567';
@@ -132,6 +140,18 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
           className="flex items-center justify-center gap-2 w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-xs uppercase tracking-widest py-4 rounded-full transition-colors">
           <MessageCircle className="w-4 h-4" /> Confirm via WhatsApp
         </a>
+        <Link href={`/exchange-request?order=${orderId}`}
+          className="flex items-center justify-center gap-2 w-full bg-[#e01e1e] hover:bg-[#c01818] text-white font-bold text-xs uppercase tracking-widest py-4 rounded-full transition-colors">
+          <Package className="w-4 h-4" /> Request Exchange
+        </Link>
+        <a href={`/api/invoice/${order.id}`} target="_blank" rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs uppercase tracking-widest py-4 rounded-full transition-colors">
+          📄 Download Invoice
+        </a>
+        <Link href="/account/orders"
+          className="flex items-center justify-center gap-2 w-full bg-gray-950 hover:bg-gray-800 text-white font-bold text-xs uppercase tracking-widest py-4 rounded-full transition-colors">
+          <Package className="w-4 h-4" /> View My Orders
+        </Link>
         <Link href="/shop"
           className="flex items-center justify-center w-full border border-gray-200 text-gray-600 font-bold text-xs uppercase tracking-widest py-4 rounded-full hover:bg-gray-50 transition-colors">
           Continue Shopping

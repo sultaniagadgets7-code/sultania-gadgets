@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { formatPrice } from '@/lib/utils';
 import { Users } from 'lucide-react';
 
@@ -24,7 +24,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default async function AdminCustomersPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data } = await supabase
     .from('orders')
     .select('customer_name, phone, city, total, status, created_at')

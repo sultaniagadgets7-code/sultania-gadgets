@@ -1,0 +1,19 @@
+<svg width="220" height="60" viewBox="0 0 220 60" xmlns="http://www.w3.org/2000/svg">
+  <!-- S-shaped lightning bolt -->
+  <g transform="translate(4, 4)">
+    <!-- Top bolt -->
+    <path d="M28 0 L10 26 L22 26 L8 52 L42 20 L28 20 L40 0 Z" fill="url(#redGradW)" />
+    <defs>
+      <linearGradient id="redGradW" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#ef4444;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#dc2626;stop-opacity:1" />
+      </linearGradient>
+    </defs>
+  </g>
+
+  <!-- SULTANIA text — white -->
+  <text x="62" y="34" font-family="Arial Black, Arial, sans-serif" font-size="22" font-weight="900" fill="#ffffff" letter-spacing="0.5">SULTANIA</text>
+
+  <!-- GADGETS text — red -->
+  <text x="64" y="50" font-family="Arial, sans-serif" font-size="10" font-weight="700" fill="#ef4444" letter-spacing="3">GADGETS</text>
+</svg>

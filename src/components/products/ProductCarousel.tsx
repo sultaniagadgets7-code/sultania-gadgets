@@ -15,12 +15,12 @@ export function ProductCarousel({ title, subtitle, products, viewAllHref }: {
       {title && (
         <div className="flex items-end justify-between px-4 sm:px-6 mb-5">
           <div>
-            {subtitle && <p className="label text-gray-400 mb-1">{subtitle}</p>}
+            {subtitle && <p className="label text-[#94a3b8] mb-1">{subtitle}</p>}
             <h2 className="heading-lg">{title}</h2>
           </div>
           {viewAllHref && (
             <Link href={viewAllHref}
-              className="flex items-center gap-1 text-xs font-semibold text-gray-400 hover:text-gray-950 transition-colors uppercase tracking-widest shrink-0">
+              className="flex items-center gap-1 text-xs font-semibold text-[#94a3b8] hover:text-[#0f172a] transition-colors uppercase tracking-widest shrink-0">
               All <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           )}

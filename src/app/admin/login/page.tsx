@@ -19,8 +19,7 @@ export default function AdminLoginPage() {
 
     const result = await adminSignIn(email, password);
     if (result.success) {
-      router.push('/admin');
-      router.refresh();
+      window.location.href = '/admin';
     } else {
       setError(result.error || 'Invalid credentials');
       setLoading(false);
@@ -31,45 +30,45 @@ export default function AdminLoginPage() {
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-6">
-          <div className="flex items-center justify-center gap-2 text-blue-700 font-bold text-xl mb-1">
-            <Zap className="w-6 h-6" aria-hidden="true" />
+          <div className="flex items-center justify-center gap-2 text-[#0a0a0a] font-black text-xl mb-1">
+            <Zap className="w-6 h-6 text-[#e01e1e]" aria-hidden="true" />
             Sultania Gadgets
           </div>
           <p className="text-gray-500 text-sm">Admin Panel</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-[20px] p-6 space-y-4">
           <h1 className="text-base font-bold text-gray-900">Sign In</h1>
 
           {error && (
-            <div className="flex items-center gap-2 text-red-700 bg-red-50 border border-red-200 rounded p-3 text-sm">
+            <div className="flex items-center gap-2 text-red-700 bg-red-50 border border-red-200 rounded-2xl p-3 text-sm">
               <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
               {error}
             </div>
           )}
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="email" className="text-sm font-medium text-gray-700">Email</label>
+            <label htmlFor="email" className="text-xs font-bold uppercase tracking-widest text-gray-500">Email</label>
             <input
               id="email"
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-gray-950"
               autoComplete="email"
             />
           </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="password" className="text-sm font-medium text-gray-700">Password</label>
+            <label htmlFor="password" className="text-xs font-bold uppercase tracking-widest text-gray-500">Password</label>
             <input
               id="password"
               type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-gray-950"
               autoComplete="current-password"
             />
           </div>
@@ -77,7 +76,7 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold py-2.5 rounded text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full bg-[#0a0a0a] hover:bg-gray-800 text-white font-bold text-xs uppercase tracking-widest py-3.5 rounded-full transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {loading && (
               <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24" aria-hidden="true">

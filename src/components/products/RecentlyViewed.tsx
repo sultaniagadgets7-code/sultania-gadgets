@@ -7,42 +7,33 @@ import { ProductCardSlim } from './ProductCardSlim';
 import { getRecentlyViewedIds } from '@/hooks/useRecentlyViewed';
 import type { Product } from '@/types';
 
-interface RecentlyViewedProps {
-  currentProductId: string;
-}
-
-export function RecentlyViewed({ currentProductId }: RecentlyViewedProps) {
+export function RecentlyViewed({ currentProductId }: { currentProductId: string }) {
   const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function load() {
-      const ids = getRecentlyViewedIds().filter((id) => id !== currentProductId);
-      if (!ids.length) { setLoading(false); return; }
+    const ids = getRecentlyViewedIds().filter((id) => id !== currentProductId);
+    if (!ids.length) return;
 
-      const supabase = createClient();
-      const { data } = await supabase
-        .from('products')
-        .select('*, product_images(*), category:categories(*)')
-        .in('id', ids)
-        .eq('is_active', true);
-
-      if (data) {
-        // Preserve the order from localStorage
-        const ordered = ids
-          .map((id) => data.find((p) => p.id === id))
-          .filter(Boolean) as Product[];
-        setProducts(ordered);
-      }
-      setLoading(false);
-    }
-    load();
+    const supabase = createClient();
+    supabase
+      .from('products')
+      .select('id, slug, title, price, compare_at_price, badge, stock_quantity, product_images(image_url, alt_text, sort_order)')
+      .in('id', ids)
+      .eq('is_active', true)
+      .then(({ data }) => {
+        if (data) {
+          const ordered = ids
+            .map((id) => data.find((p) => p.id === id))
+            .filter(Boolean) as Product[];
+          setProducts(ordered);
+        }
+      });
   }, [currentProductId]);
 
-  if (loading || !products.length) return null;
+  if (!products.length) return null;
 
   return (
-    <section className="border-t border-gray-100 max-w-7xl mx-auto py-8">
+    <section className="border-t border-[#e2e8f0] max-w-7xl mx-auto py-8">
       <div className="flex items-end justify-between px-4 sm:px-6 mb-5">
         <h2 className="heading-lg">Recently Viewed</h2>
       </div>

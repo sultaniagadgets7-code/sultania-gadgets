@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getCategories } from '@/lib/queries';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { ProductForm } from '../../ProductForm';
 import type { Product } from '@/types';
 
@@ -14,7 +14,7 @@ interface EditProductPageProps {
 
 export default async function EditProductPage({ params }: EditProductPageProps) {
   const { id } = await params;
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const [{ data: product }, categories] = await Promise.all([
     supabase.from('products').select('*, product_images(*)').eq('id', id).single(),

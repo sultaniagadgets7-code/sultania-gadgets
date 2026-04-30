@@ -12,8 +12,9 @@ interface Props {
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const { q } = await searchParams;
   return {
-    title: q ? `Search: ${q}` : 'Search',
+    title: q ? `"${q}" — Search Sultania Gadgets` : 'Search — Sultania Gadgets',
     description: q ? `Search results for "${q}" on Sultania Gadgets` : 'Search products on Sultania Gadgets',
+    robots: { index: false, follow: false }, // don't index search result pages
   };
 }
 

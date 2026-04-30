@@ -40,6 +40,7 @@ create table if not exists products (
   specs_json jsonb,
   whats_in_box text,
   is_featured boolean not null default false,
+  is_new_arrival boolean not null default false,
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

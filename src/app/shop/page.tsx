@@ -4,8 +4,12 @@ import { getProducts, getCategories } from '@/lib/queries';
 import { ShopContent } from './ShopContent';
 
 export const metadata: Metadata = {
-  title: 'Shop All Products — Sultania Gadgets',
-  description: 'Browse all genuine tech accessories — chargers, earbuds, cables, power banks. Cash on delivery across Pakistan.',
+  title: 'Shop All Products — Sultania Gadgets Pakistan',
+  description: 'Browse all genuine tech accessories in Pakistan — chargers, earbuds, cables, power banks. Cash on delivery. Tested before dispatch. Fast 2-4 day shipping.',
+  keywords: ['mobile accessories pakistan', 'chargers pakistan', 'earbuds pakistan', 'cables cod', 'power banks pakistan', 'buy tech accessories online pakistan'],
+  openGraph: { title: 'Shop All Products — Sultania Gadgets', description: 'Genuine tech accessories. COD across Pakistan.', url: 'https://sultaniagadgets.com/shop', type: 'website' },
+  twitter: { card: 'summary_large_image', title: 'Shop — Sultania Gadgets', description: 'Genuine tech accessories. COD across Pakistan.' },
+  alternates: { canonical: 'https://sultaniagadgets.com/shop' },
 };
 
 interface ShopPageProps {

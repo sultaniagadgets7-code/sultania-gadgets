@@ -7,13 +7,6 @@ import { X, ShoppingBag } from 'lucide-react';
 import { formatPrice, getPrimaryImage } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
 
-const ROWS = [
-  { label: 'Price', key: 'price' as const },
-  { label: 'Condition', key: 'condition' as const },
-  { label: 'Compatibility', key: 'compatibility' as const },
-  { label: 'Stock', key: 'stock_quantity' as const },
-];
-
 export default function ComparePage() {
   const { products, remove, clear } = useCompare();
 

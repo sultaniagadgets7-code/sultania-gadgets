@@ -3,7 +3,7 @@ import Link from 'next/link';
 import {
   Zap, LayoutDashboard, Package, ShoppingBag, LogOut, Star, Tag,
   BarChart2, Users, AlertTriangle, Ticket, HelpCircle, MessageSquare, Settings,
-  Banknote, RefreshCw, Package2,
+  Banknote, RefreshCw, Package2, FileText,
 } from 'lucide-react';
 import { adminSignOut } from '@/lib/actions';
 
@@ -27,6 +27,7 @@ const NAV_ITEMS = [
   { href: '/admin/reviews',      icon: Star,            label: 'Reviews' },
   { href: '/admin/faqs',         icon: HelpCircle,      label: 'FAQs' },
   { href: '/admin/testimonials', icon: MessageSquare,   label: 'Testimonials' },
+  { href: '/admin/blog',         icon: FileText,        label: 'Blog Posts' },
   { href: '/admin/settings',     icon: Settings,        label: 'Settings' },
 ];
 

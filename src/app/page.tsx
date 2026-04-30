@@ -1,80 +1,151 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, MessageCircle, ShieldCheck, Truck, CreditCard, RefreshCw, CheckCircle, Star } from 'lucide-react';
-import { getFeaturedProducts, getCategories, getFaqItems, getTestimonials, getSiteSettings, getProducts } from '@/lib/queries';
-import { ProductCarousel } from '@/components/products/ProductCarousel';
+import { getFeaturedProducts, getNewArrivals, getCategories, getFaqItems, getTestimonials, getSiteSettings, getProducts, getActiveBundles, getTopRatedProducts } from '@/lib/queries';import { ProductCarousel } from '@/components/products/ProductCarousel';
 import { CategoryCarousel } from '@/components/ui/CategoryCarousel';
 import { Accordion } from '@/components/ui/Accordion';
-import { getWhatsAppUrl } from '@/lib/utils';
+import { NewsletterForm } from '@/components/ui/NewsletterForm';
+import { getWhatsAppUrl, formatPrice } from '@/lib/utils';
+
+// Enable ISR - revalidate every 10 minutes (increased from 5)
+export const revalidate = 600;
 
 export const metadata: Metadata = {
-  title: 'Sultania Gadgets — Trusted Tech Accessories in Pakistan',
-  description: 'Genuine chargers, earbuds, cables, power banks. Cash on delivery. Tested before dispatch.',
+  title: "Sultania Gadgets — Pakistan's Trusted Tech Essentials",
+  description: 'Shop genuine mobile accessories in Pakistan. Premium chargers, wireless earbuds, USB cables, and power banks. Cash on delivery nationwide. All products tested before dispatch. Fast 2-4 day shipping.',
+  keywords: ['chargers Pakistan', 'earbuds Pakistan', 'cables COD', 'power banks Pakistan', 'mobile accessories', 'cash on delivery', 'Sultania Gadgets'],
+  alternates: {
+    canonical: 'https://sultaniagadgets.com',
+  },
+  openGraph: {
+    title: "Sultania Gadgets — Pakistan's Trusted Tech Essentials",
+    description: 'Shop genuine mobile accessories in Pakistan. Premium chargers, wireless earbuds, USB cables, and power banks. Cash on delivery nationwide.',
+    url: 'https://sultaniagadgets.com',
+    siteName: 'Sultania Gadgets',
+    locale: 'en_PK',
+    type: 'website',
+    images: [
+      {
+        url: '/api/og',
+        width: 1200,
+        height: 630,
+        alt: 'Sultania Gadgets - Trusted Tech Accessories',
+      },
+    ],
+  },
+  twitter: { 
+    card: 'summary_large_image', 
+    title: "Sultania Gadgets — Pakistan's Trusted Tech Essentials", 
+    description: 'Shop genuine mobile accessories in Pakistan. COD nationwide. Tested before dispatch.',
+    images: ['/api/og'],
+  },
 };
 
 export default async function HomePage() {
-  const [featured, categories, faqs, testimonials, settings, all] = await Promise.all([
-    getFeaturedProducts(), getCategories(), getFaqItems(),
-    getTestimonials(), getSiteSettings(), getProducts({ sort: 'newest' }),
+  // Single optimized batch — all queries in parallel
+  // allProducts is fetched once and reused for both deals and category rows
+  const [featured, newArrivals, categories, settings, faqs, testimonials, bundles, topRated, allProducts] = await Promise.all([
+    getFeaturedProducts(),
+    getNewArrivals(),
+    getCategories(),
+    getSiteSettings(),
+    getFaqItems().then(f => f.slice(0, 5)),
+    getTestimonials().then(t => t.slice(0, 3)),
+    getActiveBundles().then(b => b.slice(0, 3)),
+    getTopRatedProducts().then(p => p.slice(0, 6)),
+    getProducts({ sort: 'newest' }),
   ]);
+
+  // Derive deals from allProducts — no second DB call
+  const deals = allProducts
+    .filter((p) => p.compare_at_price && p.compare_at_price > p.price)
+    .sort((a, b) => {
+      const pA = Math.round(((a.compare_at_price! - a.price) / a.compare_at_price!) * 100);
+      const pB = Math.round(((b.compare_at_price! - b.price) / b.compare_at_price!) * 100);
+      return pB - pA;
+    })
+    .slice(0, 8);
+
   const wa = settings?.whatsapp_number || process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '923001234567';
-  const chargers = all.filter((p) => p.category?.slug === 'chargers');
-  const earbuds  = all.filter((p) => p.category?.slug === 'earbuds');
-  const deals    = all.filter((p) => p.compare_at_price && p.compare_at_price > p.price)
-                      .sort((a, b) => {
-                        const pA = Math.round(((a.compare_at_price! - a.price) / a.compare_at_price!) * 100);
-                        const pB = Math.round(((b.compare_at_price! - b.price) / b.compare_at_price!) * 100);
-                        return pB - pA;
-                      })
-                      .slice(0, 10);
+
+  // Find chargers and earbuds categories — check exact slugs first, then keywords
+  const chargersCat = categories.find(c => c.slug === 'Chargers') ||
+    categories.find(c => c.slug === 'chargers') ||
+    categories.find(c => c.slug === 'wireless-chargers') ||
+    categories.find(c => c.slug.toLowerCase().includes('charger') || c.name.toLowerCase().includes('charger'));
+
+  const earbudsCat = categories.find(c => c.slug === 'wireless-earbuds') ||
+    categories.find(c => c.slug === 'headphones') ||
+    categories.find(c =>
+      c.slug.toLowerCase().includes('earbud') || c.slug.toLowerCase().includes('headphone') ||
+      c.name.toLowerCase().includes('earbud') || c.name.toLowerCase().includes('headphone')
+    );
+
+  // Derive category products from allProducts — matched by category id
+  const chargerProducts = allProducts
+    .filter(p => chargersCat && p.category?.id === chargersCat.id)
+    .slice(0, 10);
+
+  const earbudProducts = allProducts
+    .filter(p => earbudsCat && p.category?.id === earbudsCat.id)
+    .slice(0, 10);
 
   return (
     <div>
 
       {/* ── HERO ─────────────────────────────────────────────── */}
-      <section className="bg-[#0a0a0a] text-white relative overflow-hidden">
-        {/* Subtle dot texture */}
-        <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
-          style={{ backgroundImage: 'radial-gradient(circle,#e01e1e 1px,transparent 1px)', backgroundSize: '32px 32px' }} />
+      <section className="hero-bg text-white relative overflow-hidden">
+        {/* 3D depth layers */}
+        <div className="absolute inset-0 pointer-events-none"
+          style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(220,38,38,0.12) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(153,27,27,0.15) 0%, transparent 40%)' }} />
+        {/* Subtle grid */}
+        <div className="absolute inset-0 opacity-[0.07] pointer-events-none"
+          style={{ backgroundImage: 'linear-gradient(rgba(220,38,38,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(220,38,38,0.4) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+        {/* Bottom fade to white */}
+        <div className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none"
+          style={{ background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.05))' }} />
 
-        <div className="relative max-w-7xl mx-auto px-5 sm:px-8 py-20 md:py-32 lg:py-40">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-8 py-10 sm:py-20 md:py-32 lg:py-40">
           <div className="max-w-2xl mx-auto text-center">
-            <p className="label text-gray-500 mb-6">Trusted Tech · Pakistan</p>
-            <h1 className="display text-white mb-6">
+            <div className="inline-flex items-center gap-2 bg-[#dc2626]/20 border border-[#dc2626]/40 rounded-full px-3 py-1.5 mb-5">
+              <span className="w-2 h-2 rounded-full bg-[#dc2626] pulse-red inline-block" />
+              <span className="text-[10px] sm:text-xs font-bold text-[#fca5a5] uppercase tracking-widest">Trusted Tech · Pakistan</span>
+            </div>
+            <h1 className="display text-white hero-3d-text mb-4 sm:mb-6">
               {settings?.hero_headline || 'Gear That'}<br />
-              <em className="not-italic text-gray-400">{settings?.hero_subtext ? '' : 'Actually Works.'}</em>
+              <span className="text-gradient-red">{settings?.hero_subtext ? '' : 'Actually Works.'}</span>
             </h1>
-            <p className="text-gray-400 text-lg leading-relaxed mb-10 max-w-md mx-auto">
+            <p className="text-red-200/70 text-sm sm:text-lg leading-relaxed mb-7 sm:mb-10 max-w-md mx-auto px-2">
               {settings?.hero_subtext || 'Chargers, earbuds, cables — every product tested before dispatch. Cash on delivery. No fake specs.'}
             </p>
-            <div className="flex flex-wrap justify-center gap-3">
-              {/* Primary CTA — red, the one action we want */}
+            <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-3">
               <Link href="/shop"
-                className="inline-flex items-center gap-2 bg-[#e01e1e] hover:bg-[#c01818] text-white font-bold text-sm uppercase tracking-widest px-8 py-4 rounded-full transition-colors">
+                className="btn-3d inline-flex items-center justify-center gap-2 bg-[#dc2626] hover:bg-[#b91c1c] text-white font-bold text-sm uppercase tracking-widest px-7 py-3.5 rounded-full transition-colors w-full sm:w-auto">
                 Shop Now <ArrowRight className="w-4 h-4" />
               </Link>
-              {/* Secondary — outlined, neutral */}
               <a href={getWhatsAppUrl(wa, 'Assalamualaikum, I want to browse your products.')}
                 target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 border border-gray-700 text-gray-300 font-bold text-sm uppercase tracking-widest px-8 py-4 rounded-full hover:border-white hover:text-white transition-colors">
+                className="inline-flex items-center justify-center gap-2 border border-white/25 text-white font-bold text-sm uppercase tracking-widest px-7 py-3.5 rounded-full hover:bg-white/10 hover:border-white/50 transition-all w-full sm:w-auto">
                 <MessageCircle className="w-4 h-4" /> WhatsApp
               </a>
             </div>
+            <p className="text-red-300/50 text-xs mt-5">✓ No advance payment &nbsp;·&nbsp; ✓ Pay on delivery &nbsp;·&nbsp; ✓ Easy exchange</p>
           </div>
         </div>
 
         {/* Stats bar */}
-        <div className="relative border-t border-gray-800">
-          <div className="max-w-7xl mx-auto px-5 sm:px-8 py-4 flex flex-nowrap justify-center gap-x-6 sm:gap-x-8 overflow-x-auto no-scrollbar">
+        <div className="relative border-t border-white/10 bg-black/20 backdrop-blur-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3 sm:py-4 flex flex-nowrap justify-around sm:justify-center sm:gap-x-12 overflow-x-auto no-scrollbar">
             {[
-              { n: '100%', l: 'Tested Before Dispatch' },
+              { n: '100%', l: 'Tested' },
               { n: 'COD',  l: 'Cash on Delivery' },
-              { n: '2–4',  l: 'Day Delivery' },
-              { n: '24/7', l: 'WhatsApp Support' },
+              { n: '2–4d', l: 'Delivery' },
+              { n: '⭐',    l: 'Loyalty Points' },
+              { n: '🔄',   l: 'Easy Exchange' },
             ].map(({ n, l }) => (
-              <div key={l} className="text-center">
-                <p className="text-white font-black text-sm sm:text-xl tracking-tight">{n}</p>
-                <p className="text-gray-600 font-semibold uppercase tracking-widest text-[9px] sm:text-[11px] mt-0.5">{l}</p>
+              <div key={l} className="text-center shrink-0 px-1">
+                <p className="text-white font-black text-xs sm:text-xl tracking-tight">{n}</p>
+                <p className="text-red-300/50 font-semibold uppercase tracking-widest text-[8px] sm:text-[11px] mt-0.5 leading-tight">{l}</p>
               </div>
             ))}
           </div>
@@ -82,8 +153,8 @@ export default async function HomePage() {
       </section>
 
       {/* ── CATEGORY PILLS ───────────────────────────────────── */}
-      <section className="py-5 border-b border-gray-100">
-        <p className="text-center font-bold text-gray-400 text-xs uppercase tracking-widest mb-3">Shop by Category</p>
+      <section className="py-5 border-b border-[#e2e8f0]">
+        <p className="text-center font-bold text-[#94a3b8] text-xs uppercase tracking-widest mb-3">Shop by Category</p>
         <CategoryCarousel categories={categories} />
       </section>
 
@@ -93,122 +164,226 @@ export default async function HomePage() {
       </div>
 
       {/* ── NEW ARRIVALS ─────────────────────────────────────── */}
-      <div className="max-w-7xl mx-auto">
-        <ProductCarousel title="New Arrivals" subtitle="Just In" products={all.slice(0, 10)} viewAllHref="/shop?sort=newest" />
-      </div>
+      {newArrivals.length > 0 && (
+        <div className="max-w-7xl mx-auto">
+          <ProductCarousel title="New Arrivals" subtitle="Just In" products={newArrivals} viewAllHref="/shop?sort=newest" />
+        </div>
+      )}
+
+      {/* ── TOP RATED ────────────────────────────────────────── */}
+      {topRated.length > 0 && (
+        <div className="max-w-7xl mx-auto border-t border-gray-50">
+          <ProductCarousel title="Top Rated" subtitle="Customer Favorites" products={topRated} viewAllHref="/shop" />
+        </div>
+      )}
 
       {/* ── DEALS & DISCOUNTS ────────────────────────────────── */}
       {deals.length > 0 && (
-        <section className="mx-4 sm:mx-6 my-6 bg-white border border-gray-100 rounded-[28px] overflow-hidden relative">
+        <section className="px-3 sm:px-6 my-4 sm:my-6">
+          <div className="bg-white border border-[#e2e8f0] rounded-2xl sm:rounded-[28px] overflow-hidden relative">
           {/* Subtle fire dot pattern */}
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
-            style={{ backgroundImage: 'radial-gradient(circle,#e01e1e 1px,transparent 1px)', backgroundSize: '20px 20px' }} />
+            style={{ backgroundImage: 'radial-gradient(circle,#dc2626 1px,transparent 1px)', backgroundSize: '20px 20px' }} />
 
           <div className="relative max-w-7xl mx-auto">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 pt-8 pb-2">
+            <div className="flex items-center justify-between px-4 sm:px-6 pt-6 sm:pt-8 pb-2">
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xl" aria-hidden="true">🔥</span>
-                  <p className="label text-[#e01e1e]">Limited Time</p>
+                  <p className="label text-[#dc2626]">Limited Time</p>
                 </div>
-                <h2 className="heading-lg text-[#0a0a0a]">Deals &amp; Discounts</h2>
+                <h2 className="heading-lg text-[#0f172a]">Deals &amp; Discounts</h2>
               </div>
               <Link href="/deals"
-                className="flex items-center gap-1 text-xs font-bold text-gray-400 hover:text-[#e01e1e] transition-colors uppercase tracking-widest shrink-0">
+                className="flex items-center gap-1 text-xs font-bold text-[#94a3b8] hover:text-[#dc2626] transition-colors uppercase tracking-widest shrink-0">
                 All Deals <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
 
-            <div className="pb-8">
+            <div className="pb-6 sm:pb-8">
               <ProductCarousel title="" products={deals} viewAllHref="/deals" />
             </div>
+          </div>
           </div>
         </section>
       )}
 
-      {/* ── CATEGORY FEATURE BLOCKS ──────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {[
-            { slug: 'chargers', emoji: '⚡', title: 'Fast Chargers', desc: 'GaN technology, compact design, universal compatibility.' },
-            { slug: 'earbuds',  emoji: '🎧', title: 'Premium Earbuds', desc: 'ANC, long battery, crystal-clear sound.' },
-          ].map(({ slug, emoji, title, desc }) => (
-            <Link key={slug} href={`/category/${slug}`}
-              className="group relative bg-[#0a0a0a] rounded-[24px] p-8 overflow-hidden hover:bg-[#1a0000] transition-colors border border-gray-800 hover:border-[#e01e1e]">
-              <div className="text-5xl mb-4" aria-hidden="true">{emoji}</div>
-              <h3 className="text-white font-bold text-xl tracking-tight mb-2">{title}</h3>
-              <p className="text-gray-500 text-sm leading-relaxed mb-5">{desc}</p>
-              <span className="inline-flex items-center gap-2 text-[#e01e1e] label group-hover:gap-3 transition-all">
-                Shop Now <ArrowRight className="w-3.5 h-3.5" />
-              </span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* ── CHARGERS CAROUSEL ────────────────────────────────── */}
-      {chargers.length > 0 && (
+      {/* ── CHARGERS ROW ─────────────────────────────────────── */}
+      {chargerProducts.length > 0 && chargersCat && (
         <div className="max-w-7xl mx-auto border-t border-gray-50">
-          <ProductCarousel title="Chargers" subtitle="Fast & Reliable" products={chargers} viewAllHref="/category/chargers" />
+          <ProductCarousel
+            title={chargersCat.name}
+            subtitle={chargersCat.emoji ? `${chargersCat.emoji} Shop Now` : 'Shop Now'}
+            products={chargerProducts}
+            viewAllHref={`/category/${chargersCat.slug}`}
+          />
         </div>
       )}
 
-      {/* ── EARBUDS CAROUSEL ─────────────────────────────────── */}
-      {earbuds.length > 0 && (
+      {/* ── EARBUDS ROW ──────────────────────────────────────── */}
+      {earbudProducts.length > 0 && earbudsCat && (
         <div className="max-w-7xl mx-auto border-t border-gray-50">
-          <ProductCarousel title="Earbuds" subtitle="Premium Sound" products={earbuds} viewAllHref="/category/earbuds" />
+          <ProductCarousel
+            title={earbudsCat.name}
+            subtitle={earbudsCat.emoji ? `${earbudsCat.emoji} Shop Now` : 'Shop Now'}
+            products={earbudProducts}
+            viewAllHref={`/category/${earbudsCat.slug}`}
+          />
         </div>
+      )}
+
+      {/* ── CATEGORY FEATURE BLOCKS ──────────────────────────── */}      {(chargersCat || earbudsCat) && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {[chargersCat, earbudsCat].filter(Boolean).map((cat) => (
+              <Link key={cat!.slug} href={`/category/${cat!.slug}`}
+                className="group relative bg-[#0a0a0f] rounded-[24px] p-8 overflow-hidden hover:bg-[#111] transition-colors border border-[#0a0a0f] hover:border-[#dc2626]">
+                <div className="text-5xl mb-4" aria-hidden="true">{cat!.emoji || '📦'}</div>
+                <h3 className="text-white font-bold text-xl tracking-tight mb-2">{cat!.name}</h3>
+                <p className="text-[#64748b] text-sm leading-relaxed mb-5">{cat!.description || `Shop all ${cat!.name} — genuine products, cash on delivery.`}</p>
+                <span className="inline-flex items-center gap-2 text-[#dc2626] label group-hover:gap-3 transition-all">
+                  Shop Now <ArrowRight className="w-3.5 h-3.5" />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── PRODUCT BUNDLES ──────────────────────────────────── */}
+      {bundles.length > 0 && (
+        <section className="px-3 sm:px-6 my-4 sm:my-6">
+          <div className="bg-white border border-[#e2e8f0] rounded-2xl sm:rounded-[28px] overflow-hidden relative">
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xl" aria-hidden="true">📦</span>
+                  <p className="label text-[#dc2626]">Save More</p>
+                </div>
+                <h2 className="heading-lg text-[#0a0a0f]">Product Bundles</h2>
+                <p className="text-[#64748b] text-sm mt-1">Get multiple products at discounted prices</p>
+              </div>
+              <Link href="/bundles"
+                className="flex items-center gap-1 text-xs font-bold text-[#94a3b8] hover:text-[#dc2626] transition-colors uppercase tracking-widest shrink-0">
+                View All <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {bundles.slice(0, 3).map((bundle: any) => {
+                const items = bundle.bundle_items ?? [];
+                const originalTotal = items.reduce((s: number, i: any) =>
+                  s + (i.product?.price ?? 0) * i.quantity, 0);
+                const discountedTotal = Math.round(originalTotal * (1 - bundle.discount_percent / 100));
+                const savings = originalTotal - discountedTotal;
+
+                return (
+                  <Link key={bundle.id} href={`/bundles/${bundle.slug}`}
+                    className="group bg-[#f8fafc] border border-[#e2e8f0] rounded-[20px] p-5 hover:border-[#dc2626] transition-all hover:shadow-md">
+                    <div className="flex items-start justify-between mb-3">
+                      <h3 className="text-[#0a0a0f] font-bold text-sm group-hover:text-[#dc2626] transition-colors line-clamp-2">
+                        {bundle.title}
+                      </h3>
+                      {bundle.discount_percent > 0 && (
+                        <span className="shrink-0 ml-2 bg-[#dc2626] text-white text-[10px] font-bold px-2 py-1 rounded-full">
+                          -{bundle.discount_percent}%
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-baseline gap-2 mb-2">
+                      <span className="text-lg font-black text-[#0a0a0f]">{formatPrice(discountedTotal)}</span>
+                      {savings > 0 && (
+                        <span className="text-xs text-[#94a3b8] line-through">{formatPrice(originalTotal)}</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-[#64748b]">{items.length} products • Save {formatPrice(savings)}</p>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+          </div>
+        </section>
       )}
 
       {/* ── WHY US ───────────────────────────────────────────── */}
-      <section className="bg-[#f7f7f7] py-16 px-4 sm:px-6 mt-6">
+      <section className="bg-white py-10 sm:py-16 px-4 sm:px-6 border-t border-[#e2e8f0]">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <p className="label text-gray-400 mb-2">Our Promise</p>
-            <h2 className="heading-xl">Why Sultania Gadgets?</h2>
+          <div className="text-center mb-8 sm:mb-12">
+            <p className="label text-[#dc2626] mb-2">Our Promise</p>
+            <h2 className="heading-xl text-[#0a0a0f]">Why Sultania Gadgets?</h2>
           </div>
-          {/* Mobile: horizontal scroll */}
-          <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2 md:grid md:grid-cols-3 md:overflow-visible">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
             {[
-              { icon: ShieldCheck, t: 'Tested Before Dispatch', d: 'Every product checked and verified before it leaves our hands.' },
-              { icon: CheckCircle, t: 'Honest Specs',           d: 'No fake specs. No misleading listings. What you see is what you get.' },
-              { icon: CreditCard,  t: 'Cash on Delivery',       d: 'Pay when you receive. No advance payment, no risk.' },
-              { icon: Truck,       t: 'Ships from Pakistan',    d: 'Fast delivery to all major cities in 2–4 business days.' },
-              { icon: RefreshCw,   t: 'Easy Exchange',          d: 'Defective item? We arrange a replacement at no extra cost.' },
-              { icon: MessageCircle,t:'WhatsApp Support',       d: 'Fast, human support on WhatsApp. No bots, no delays.' },
+              { icon: ShieldCheck, t: 'Tested Before Dispatch', d: 'Every product checked before it leaves our hands.' },
+              { icon: CheckCircle, t: 'Honest Specs',           d: 'No fake specs. What you see is what you get.' },
+              { icon: CreditCard,  t: 'Cash on Delivery',       d: 'Pay when you receive. No advance payment.' },
+              { icon: Truck,       t: 'Ships from Pakistan',    d: 'Fast delivery to all major cities in 2–4 days.' },
+              { icon: RefreshCw,   t: 'Easy Exchange',          d: 'Defective item? We arrange a replacement.' },
+              { icon: MessageCircle,t:'WhatsApp Support',       d: 'Fast, human support on WhatsApp. No bots.' },
             ].map(({ icon: Icon, t, d }) => (
-              <div key={t} className="shrink-0 w-60 md:w-auto bg-white rounded-[20px] p-6">
-                <div className="w-10 h-10 bg-[#0a0a0a] rounded-2xl flex items-center justify-center mb-4">
-                  <Icon className="w-5 h-5 text-white" aria-hidden="true" />
+              <div key={t} className="bg-[#f8fafc] border border-[#e2e8f0] rounded-2xl p-4 sm:p-6 hover:border-[#dc2626]/30 hover:shadow-md transition-all">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 bg-[#0a0a0f] rounded-xl sm:rounded-2xl flex items-center justify-center mb-3 sm:mb-4">
+                  <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" aria-hidden="true" />
                 </div>
-                <p className="font-bold text-gray-950 text-sm mb-1.5">{t}</p>
-                <p className="text-xs text-gray-500 leading-relaxed">{d}</p>
+                <p className="font-bold text-[#0a0a0f] text-xs sm:text-sm mb-1">{t}</p>
+                <p className="text-[11px] sm:text-xs text-[#64748b] leading-relaxed">{d}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
+      {/* ── LOYALTY PROGRAM ──────────────────────────────────── */}
+      <section className="px-4 sm:px-6 py-10 sm:py-16">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-[#0a0a0f] rounded-2xl sm:rounded-[28px] p-6 sm:p-8 md:p-12 text-center text-white relative overflow-hidden"
+            style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.15)' }}>
+            <div className="absolute inset-0 opacity-[0.05]"
+              style={{ backgroundImage: 'radial-gradient(circle,#dc2626 1px,transparent 1px)', backgroundSize: '24px 24px' }} />
+            <div className="relative">
+              <div className="text-3xl sm:text-4xl mb-3 sm:mb-4 float" aria-hidden="true">⭐</div>
+              <p className="label text-[#dc2626] mb-2 sm:mb-3">Rewards Program</p>
+              <h2 className="heading-xl text-white mb-2 sm:mb-3">Earn Loyalty Points</h2>
+              <p className="text-slate-400 text-sm mb-6 sm:mb-8 max-w-md mx-auto">
+                Get 1 point for every Rs. 100 spent. Redeem for discounts on future orders.
+              </p>
+              <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-3">
+                <Link href="/account/loyalty"
+                  className="btn-3d inline-flex items-center justify-center gap-2 bg-[#dc2626] hover:bg-[#b91c1c] text-white font-bold text-sm uppercase tracking-widest px-7 py-3.5 rounded-full transition-colors w-full sm:w-auto">
+                  <Star className="w-4 h-4" /> View My Points
+                </Link>
+                <Link href="/shop"
+                  className="inline-flex items-center justify-center gap-2 border border-white/30 text-white font-bold text-sm uppercase tracking-widest px-7 py-3.5 rounded-full hover:border-white hover:bg-white/10 transition-colors w-full sm:w-auto">
+                  Start Shopping
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── TESTIMONIALS ─────────────────────────────────────── */}
       {testimonials.length > 0 && (
-        <section className="py-16 px-4 sm:px-6">
+        <section className="py-10 sm:py-16 px-4 sm:px-6">
           <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-10">
-              <p className="label text-gray-400 mb-2">Reviews</p>
+            <div className="text-center mb-8 sm:mb-10">
+              <p className="label text-[#94a3b8] mb-2">Reviews</p>
               <h2 className="heading-xl">What Customers Say</h2>
             </div>
-            <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2 md:grid md:grid-cols-3 md:overflow-visible">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {testimonials.map((t) => (
-                <div key={t.id} className="shrink-0 w-72 md:w-auto bg-[#f7f7f7] rounded-[20px] p-6">
+                <div key={t.id} className="bg-[#f8fafc] rounded-2xl p-5 border border-[#e2e8f0]">
                   <div className="flex gap-0.5 mb-3" aria-label="5 stars">
                     {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} className="w-3.5 h-3.5 fill-gray-950 text-gray-950" aria-hidden="true" />
+                      <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" aria-hidden="true" />
                     ))}
                   </div>
-                  <p className="text-sm text-gray-700 leading-relaxed mb-4">&ldquo;{t.quote}&rdquo;</p>
-                  <p className="text-xs font-bold text-gray-950">{t.customer_name}</p>
-                  {t.location && <p className="text-xs text-gray-400 mt-0.5">{t.location}</p>}
+                  <p className="text-sm text-[#64748b] leading-relaxed mb-4">&ldquo;{t.quote}&rdquo;</p>
+                  <p className="text-xs font-bold text-[#0f172a]">{t.customer_name}</p>
+                  {t.location && <p className="text-xs text-[#94a3b8] mt-0.5">{t.location}</p>}
                 </div>
               ))}
             </div>
@@ -219,9 +394,9 @@ export default async function HomePage() {
       {/* ── SOCIAL MEDIA ─────────────────────────────────────── */}
       <section className="px-4 sm:px-6 py-14">
         <div className="max-w-3xl mx-auto text-center">
-          <p className="label text-gray-400 mb-2">Follow Us</p>
+          <p className="label text-[#94a3b8] mb-2">Follow Us</p>
           <h2 className="heading-xl mb-3">Stay Connected</h2>
-          <p className="text-gray-500 text-sm mb-8 max-w-sm mx-auto">
+          <p className="text-[#64748b] text-sm mb-8 max-w-sm mx-auto">
             Follow us for new arrivals, deals, and tech tips.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
@@ -257,7 +432,7 @@ export default async function HomePage() {
             {settings?.social_tiktok && (
               <a href={settings.social_tiktok}
                 target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-3 bg-[#0a0a0a] hover:bg-gray-800 text-white px-6 py-3.5 rounded-full font-bold text-sm transition-colors border border-gray-800">
+                className="flex items-center gap-3 bg-[#0f172a] hover:bg-[#1e293b] text-white px-6 py-3.5 rounded-full font-bold text-sm transition-colors border border-[#334155]">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.76a4.85 4.85 0 01-1.01-.07z"/></svg>
                 TikTok
               </a>
@@ -275,7 +450,7 @@ export default async function HomePage() {
             {settings?.social_twitter && (
               <a href={settings.social_twitter}
                 target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-3 bg-[#0a0a0a] hover:bg-gray-800 text-white px-6 py-3.5 rounded-full font-bold text-sm transition-colors">
+                className="flex items-center gap-3 bg-[#0f172a] hover:bg-[#1e293b] text-white px-6 py-3.5 rounded-full font-bold text-sm transition-colors">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
                 X / Twitter
               </a>
@@ -286,17 +461,17 @@ export default async function HomePage() {
 
       {/* ── FAQ ──────────────────────────────────────────────── */}
       {faqs.length > 0 && (
-        <section className="bg-[#f7f7f7] py-16 px-4 sm:px-6">
+        <section className="bg-white py-16 px-4 sm:px-6 border-t border-[#e2e8f0]">
           <div className="max-w-2xl mx-auto">
             <div className="text-center mb-10">
-              <p className="label text-gray-400 mb-2">Help</p>
+              <p className="label text-[#94a3b8] mb-2">Help</p>
               <h2 className="heading-xl">Common Questions</h2>
             </div>
-            <div className="bg-white rounded-[20px] px-6">
+            <div className="bg-[#f8fafc] rounded-[20px] px-6 border border-[#e2e8f0]">
               <Accordion items={faqs.slice(0, 5)} />
             </div>
             <div className="text-center mt-6">
-              <Link href="/faq" className="text-sm font-semibold text-gray-400 hover:text-gray-950 transition-colors underline underline-offset-4">
+              <Link href="/faq" className="text-sm font-semibold text-[#94a3b8] hover:text-[#0a0a0f] transition-colors underline underline-offset-4">
                 View all FAQs
               </Link>
             </div>
@@ -304,19 +479,32 @@ export default async function HomePage() {
         </section>
       )}
 
+      {/* ── NEWSLETTER ───────────────────────────────────────── */}
+      <section className="bg-white py-12 sm:py-16 px-4 sm:px-6 border-t border-[#e2e8f0]">
+        <div className="max-w-xl mx-auto text-center">
+          <p className="label text-[#dc2626] mb-2">Stay Updated</p>
+          <h2 className="heading-xl text-[#0a0a0f] mb-3">Get Exclusive Deals</h2>
+          <p className="text-[#64748b] text-sm mb-6 max-w-sm mx-auto">
+            Subscribe for early access to new arrivals, flash sales, and special discounts. No spam, ever.
+          </p>
+          <NewsletterForm />
+        </div>
+      </section>
+
       {/* ── WHATSAPP CTA ─────────────────────────────────────── */}
       <section className="px-4 sm:px-6 py-16">
         <div className="max-w-7xl mx-auto">
-          <div className="bg-[#0a0a0a] rounded-[28px] px-8 py-14 text-center text-white relative overflow-hidden">
-            <div className="absolute inset-0 opacity-[0.06]"
-              style={{ backgroundImage: 'radial-gradient(circle,#e01e1e 1px,transparent 1px)', backgroundSize: '24px 24px' }} />
+          <div className="bg-[#0a0a0f] rounded-[28px] px-8 py-14 text-center text-white relative overflow-hidden"
+            style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.15)' }}>
+            <div className="absolute inset-0 opacity-[0.05]"
+              style={{ backgroundImage: 'radial-gradient(circle,#dc2626 1px,transparent 1px)', backgroundSize: '24px 24px' }} />
             <div className="relative">
-            <p className="label text-gray-500 mb-3">Get in Touch</p>
+              <p className="label text-[#dc2626] mb-3">Get in Touch</p>
               <h2 className="heading-xl text-white mb-3">Need Help Choosing?</h2>
-              <p className="text-gray-500 text-sm mb-8 max-w-xs mx-auto">Chat with us on WhatsApp — fast response, honest advice, no pressure.</p>
+              <p className="text-slate-500 text-sm mb-8 max-w-xs mx-auto">Chat with us on WhatsApp — fast response, honest advice, no pressure.</p>
               <a href={getWhatsAppUrl(wa, 'Assalamualaikum, I need help choosing a product.')}
                 target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-sm uppercase tracking-widest px-8 py-4 rounded-full transition-colors">
+                className="btn-3d inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-sm uppercase tracking-widest px-8 py-4 rounded-full transition-colors">
                 <MessageCircle className="w-4 h-4" /> Chat on WhatsApp
               </a>
             </div>

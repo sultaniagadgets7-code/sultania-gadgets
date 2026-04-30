@@ -22,10 +22,10 @@ export default async function AdminDashboardPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
         <div className="flex gap-2">
-          <Link href="/admin/products/new" className="bg-blue-700 hover:bg-blue-800 text-white text-sm font-semibold px-3 py-2 rounded transition-colors">
+          <Link href="/admin/products/new" className="bg-[#0a0a0a] hover:bg-gray-800 text-white text-sm font-bold uppercase tracking-widest px-4 py-2.5 rounded-full transition-colors">
             + Add Product
           </Link>
-          <Link href="/" target="_blank" className="border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm px-3 py-2 rounded transition-colors">
+          <Link href="/" target="_blank" className="border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-semibold px-4 py-2.5 rounded-full transition-colors">
             View Store
           </Link>
         </div>
@@ -33,28 +33,41 @@ export default async function AdminDashboardPage() {
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
         {cards.map(({ label, value, icon: Icon, color, bg, href }) => (
-          <Link key={label} href={href} className="bg-white border border-gray-200 rounded p-4 hover:border-blue-300 transition-colors">
-            <div className={`inline-flex p-2 rounded ${bg} mb-2`}>
+          <Link key={label} href={href} className="bg-white border border-gray-100 rounded-[20px] p-5 hover:border-gray-300 hover:shadow-sm transition-all">
+            <div className={`inline-flex p-2.5 rounded-2xl ${bg} mb-3`}>
               <Icon className={`w-5 h-5 ${color}`} aria-hidden="true" />
             </div>
-            <p className="text-2xl font-bold text-gray-900">{value}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+            <p className="text-2xl font-black text-gray-950">{value}</p>
+            <p className="text-xs text-gray-400 mt-0.5 font-semibold uppercase tracking-widest">{label}</p>
           </Link>
         ))}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Link href="/admin/orders?status=pending" className="bg-orange-50 border border-orange-200 rounded p-4 hover:border-orange-400 transition-colors">
-          <p className="font-semibold text-orange-800 text-sm">Pending Orders</p>
-          <p className="text-3xl font-bold text-orange-700 mt-1">{stats.pendingOrders}</p>
-          <p className="text-xs text-orange-600 mt-1">Require confirmation →</p>
+        <Link href="/admin/orders?status=pending" className="bg-amber-50 border border-amber-200 rounded-[20px] p-5 hover:border-amber-400 transition-colors">
+          <p className="font-bold text-amber-800 text-sm">Pending Orders</p>
+          <p className="text-3xl font-black text-amber-700 mt-1">{stats.pendingOrders}</p>
+          <p className="text-xs text-amber-600 mt-1 font-semibold">Require confirmation →</p>
         </Link>
-        <Link href="/admin/products/new" className="bg-blue-50 border border-blue-200 rounded p-4 hover:border-blue-400 transition-colors">
-          <p className="font-semibold text-blue-800 text-sm">Add New Product</p>
-          <p className="text-xs text-blue-600 mt-2">Create a new product listing with images, specs, and pricing.</p>
-          <p className="text-xs text-blue-700 font-semibold mt-2">Go to product form →</p>
+        <Link href="/admin/products/new" className="bg-[#f7f7f7] border border-gray-100 rounded-[20px] p-5 hover:border-gray-300 transition-colors">
+          <p className="font-bold text-gray-950 text-sm">Add New Product</p>
+          <p className="text-xs text-gray-500 mt-2">Create a new product listing with images, specs, and pricing.</p>
+          <p className="text-xs text-gray-950 font-bold mt-2">Go to product form →</p>
         </Link>
       </div>
+
+      {stats.lowStock > 0 && (
+        <Link href="/admin/stock"
+          className="mt-4 flex items-center gap-3 bg-red-50 border border-red-200 rounded-[20px] p-5 hover:border-red-400 transition-colors">
+          <AlertTriangle className="w-5 h-5 text-red-600 shrink-0" aria-hidden="true" />
+          <div>
+            <p className="font-bold text-red-800 text-sm">
+              {stats.lowStock} product{stats.lowStock !== 1 ? 's' : ''} running low on stock
+            </p>
+            <p className="text-xs text-red-600 mt-0.5">Click to review and restock →</p>
+          </div>
+        </Link>
+      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { formatPrice } from '@/lib/utils';
 import { TrendingUp, TrendingDown, Users, ShoppingBag, DollarSign, Package } from 'lucide-react';
 
@@ -20,7 +20,7 @@ function getDateRange(daysAgo: number) {
 }
 
 export default async function AdminAnalyticsPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data: allOrders } = await supabase
     .from('orders')

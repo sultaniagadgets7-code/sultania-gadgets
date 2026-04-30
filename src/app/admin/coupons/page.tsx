@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { CouponsManager } from './CouponsManager';
 import type { Coupon } from '@/types';
 
 export const metadata: Metadata = { title: 'Coupons' };
 
 export default async function AdminCouponsPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data } = await supabase
     .from('coupons')
     .select('*')

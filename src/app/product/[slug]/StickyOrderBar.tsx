@@ -6,12 +6,19 @@ import { formatPrice, getWhatsAppUrl, getProductWhatsAppMessage } from '@/lib/ut
 export function StickyOrderBar({ price, productTitle, whatsappNumber }: {
   price: number; productTitle: string; whatsappNumber: string;
 }) {
+  function scrollToForm() {
+    const el = document.getElementById('order-form');
+    if (!el) return;
+    const top = el.getBoundingClientRect().top + window.scrollY - 80; // 80px offset for navbar
+    window.scrollTo({ top, behavior: 'smooth' });
+  }
+
   return (
     // Sits above the mobile tab bar (tab bar is ~64px tall)
     <div className="md:hidden fixed bottom-[64px] left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 flex items-center gap-3 z-40 shadow-lg">
       <span className="font-black text-gray-950 text-sm shrink-0">{formatPrice(price)}</span>
       <button
-        onClick={() => document.querySelector('form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+        onClick={scrollToForm}
         className="flex-1 bg-[#0a0a0a] hover:bg-gray-800 text-white font-bold text-xs uppercase tracking-widest py-3 rounded-full transition-colors">
         Order Now
       </button>

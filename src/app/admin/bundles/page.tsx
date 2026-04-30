@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { formatPrice } from '@/lib/utils';
 import { Package2, Plus } from 'lucide-react';
 
 export const metadata: Metadata = { title: 'Bundles' };
 
 export default async function AdminBundlesPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data: bundles } = await supabase
     .from('bundles')
     .select('*, bundle_items(id, quantity, product:products(title, price))')

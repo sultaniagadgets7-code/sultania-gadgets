@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { StockTable } from './StockTable';
 
 export const metadata: Metadata = { title: 'Low Stock' };
 
 export default async function AdminStockPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data } = await supabase
     .from('products')
     .select('id, title, sku, stock_quantity, category:categories(name)')

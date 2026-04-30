@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { CheckCircle, AlertCircle, MessageCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { waUrl } from '@/lib/whatsapp';
@@ -8,12 +9,22 @@ import { waUrl } from '@/lib/whatsapp';
 const REASONS = ['Defective / Not Working', 'Wrong Item Received', 'Not as Described', 'Damaged in Transit', 'Other'];
 
 export function ExchangeForm() {
+  const searchParams = useSearchParams();
+  const orderIdFromUrl = searchParams.get('order') || '';
+  
   const [form, setForm] = useState({
-    order_id: '', customer_name: '', phone: '', product_name: '', reason: '', description: '',
+    order_id: orderIdFromUrl, customer_name: '', phone: '', product_name: '', reason: '', description: '',
   });
   const [state, setState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [msg, setMsg] = useState('');
   const [requestId, setRequestId] = useState('');
+
+  // Update order_id when URL param changes
+  useEffect(() => {
+    if (orderIdFromUrl) {
+      setForm(prev => ({ ...prev, order_id: orderIdFromUrl }));
+    }
+  }, [orderIdFromUrl]);
 
   const inp = 'w-full bg-[#f7f7f7] border-0 rounded-2xl px-4 py-3.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0a0a0a] transition';
 

@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { AdminReviewsTable } from './AdminReviewsTable';
 import { AddReviewForm } from './AddReviewForm';
 
 export const metadata: Metadata = { title: 'Reviews' };
 
 export default async function AdminReviewsPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const [{ data: reviews }, { data: products }] = await Promise.all([
     supabase

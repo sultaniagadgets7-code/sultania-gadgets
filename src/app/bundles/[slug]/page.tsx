@@ -14,7 +14,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = await createClient();
   const { data } = await supabase.from('bundles').select('title, description').eq('slug', slug).single();
   if (!data) return { title: 'Bundle Not Found' };
-  return { title: `${data.title} Bundle`, description: data.description || '' };
+  return {
+    title: `${data.title} — Bundle Deal | Sultania Gadgets`,
+    description: data.description || `Save more with the ${data.title} bundle. Cash on delivery across Pakistan.`,
+    alternates: { canonical: `https://sultaniagadgets.com/bundles/${slug}` },
+    openGraph: {
+      title: `${data.title} — Bundle Deal | Sultania Gadgets`,
+      description: data.description || `Save more with the ${data.title} bundle.`,
+      url: `https://sultaniagadgets.com/bundles/${slug}`,
+      type: 'website',
+    },
+  };
 }
 
 export default async function BundlePage({ params }: Props) {

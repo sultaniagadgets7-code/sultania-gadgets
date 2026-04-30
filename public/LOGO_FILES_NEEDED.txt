@@ -1,0 +1,25 @@
+LOGO FILES NEEDED
+==================
+
+Add these files to this folder (/public):
+
+1. logo.png or logo.svg
+   - Main logo for navbar (light background)
+   - Size: 160×40px recommended
+   - Transparent background
+   - Your brand color
+
+2. logo-white.png or logo-white.svg
+   - White version for footer (dark background)
+   - Size: 160×40px recommended
+   - Transparent background
+   - Pure white color
+
+QUICK START:
+- If you don't have a logo yet, the site shows "SULTANIA" text
+- Create logo at: https://www.canva.com/create/logos/
+- Or use: https://www.namecheap.com/logo-maker/
+- Save as PNG with transparent background
+- Add files here
+
+The website will automatically detect and use your logo!

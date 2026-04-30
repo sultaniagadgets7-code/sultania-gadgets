@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getCategories, getProductsByCategory } from '@/lib/queries';
+import { getCategories, getProductsByCategory, getFeaturedProducts } from '@/lib/queries';
 import { ProductGrid } from '@/components/products/ProductGrid';
 import Link from 'next/link';
 
@@ -13,9 +13,15 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
   const categories = await getCategories();
   const category = categories.find((c) => c.slug === slug);
   if (!category) return { title: 'Category Not Found' };
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sultaniagadgets.com';
+  const desc = category.description || `Shop ${category.name} in Pakistan at Sultania Gadgets. Genuine products, cash on delivery. Tested before dispatch.`;
   return {
-    title: `${category.name} — Sultania Gadgets`,
-    description: category.description || `Shop ${category.name} at Sultania Gadgets. Cash on delivery.`,
+    title: `${category.name} in Pakistan — Sultania Gadgets`,
+    description: desc,
+    keywords: [`${category.name} pakistan`, `buy ${category.name} online pakistan`, `${category.name} cash on delivery`, `${category.name} price pakistan`],
+    openGraph: { title: `${category.name} — Sultania Gadgets`, description: desc, url: `${siteUrl}/category/${slug}`, type: 'website' },
+    twitter: { card: 'summary_large_image', title: `${category.name} — Sultania Gadgets`, description: desc },
+    alternates: { canonical: `${siteUrl}/category/${slug}` },
   };
 }
 
@@ -29,26 +35,51 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   const category = categories.find((c) => c.slug === slug);
   if (!category) notFound();
 
+  const isEmpty = products.length === 0;
+  const featured = isEmpty ? await getFeaturedProducts() : [];
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6">
       {/* Breadcrumb */}
-      <nav className="text-xs text-gray-500 mb-4" aria-label="Breadcrumb">
-        <Link href="/" className="hover:text-blue-700">Home</Link>
-        <span className="mx-1">/</span>
-        <Link href="/shop" className="hover:text-blue-700">Shop</Link>
-        <span className="mx-1">/</span>
-        <span className="text-gray-900">{category.name}</span>
+      <nav className="text-xs text-gray-400 mb-6" aria-label="Breadcrumb">
+        <Link href="/" className="hover:text-gray-950 transition-colors">Home</Link>
+        <span className="mx-2">/</span>
+        <Link href="/shop" className="hover:text-gray-950 transition-colors">Shop</Link>
+        <span className="mx-2">/</span>
+        <span className="text-gray-950">{category.name}</span>
       </nav>
 
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">{category.name}</h1>
+      <div className="mb-8">
+        <h1 className="font-black text-2xl text-gray-950 tracking-tight">
+          {category.emoji && <span className="mr-2">{category.emoji}</span>}
+          {category.name}
+        </h1>
         {category.description && (
-          <p className="text-gray-600 text-sm mt-1">{category.description}</p>
+          <p className="text-gray-500 text-sm mt-1">{category.description}</p>
         )}
-        <p className="text-sm text-gray-500 mt-1">{products.length} products</p>
+        {!isEmpty && <p className="text-xs text-gray-400 mt-1 font-semibold uppercase tracking-widest">{products.length} products</p>}
       </div>
 
-      <ProductGrid products={products} emptyMessage={`No ${category.name} products available yet.`} />
+      {isEmpty ? (
+        <div>
+          <div className="bg-[#f7f7f7] rounded-[20px] p-10 text-center mb-10">
+            <p className="font-bold text-gray-950 mb-1">No products in {category.name} yet</p>
+            <p className="text-sm text-gray-400 mb-5">We&apos;re adding new products regularly. Check back soon.</p>
+            <Link href="/shop"
+              className="inline-flex items-center bg-[#0a0a0a] hover:bg-gray-800 text-white font-bold text-xs uppercase tracking-widest px-6 py-3 rounded-full transition-colors">
+              Browse All Products
+            </Link>
+          </div>
+          {featured.length > 0 && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">You might like</p>
+              <ProductGrid products={featured} />
+            </div>
+          )}
+        </div>
+      ) : (
+        <ProductGrid products={products} />
+      )}
     </div>
   );
 }

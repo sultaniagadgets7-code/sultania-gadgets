@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import type { CheckoutFormData, OrderStatus } from '@/types';
 
 export async function createOrder(
@@ -16,7 +17,11 @@ export async function createOrder(
   const { data: { user } } = await supabase.auth.getUser();
 
   const subtotal = priceSnapshot * formData.quantity;
-  const deliveryFee = 200;
+
+  // Use delivery fee from site settings
+  const { data: settings } = await supabase.from('site_settings').select('delivery_fee').limit(1).single();
+  const deliveryFee = settings?.delivery_fee ?? 200;
+
   const total = subtotal + deliveryFee;
 
   const { data: order, error: orderError } = await supabase
@@ -38,7 +43,6 @@ export async function createOrder(
     .single();
 
   if (orderError || !order) {
-    console.error('Order insert error:', orderError);
     return { success: false, error: orderError?.message || 'Failed to create order. Please try again.' };
   }
 
@@ -51,7 +55,6 @@ export async function createOrder(
   });
 
   if (itemError) {
-    console.error('Order item insert error:', itemError);
     await supabase.from('orders').delete().eq('id', order.id);
     return { success: false, error: itemError?.message || 'Failed to create order. Please try again.' };
   }
@@ -61,6 +64,32 @@ export async function createOrder(
     product_id: productId,
     qty: formData.quantity,
   });
+
+  // Award loyalty points to logged-in users (1 point per Rs. 100 spent)
+  if (user?.id) {
+    await supabase.rpc('award_loyalty_points', {
+      p_user_id: user.id,
+      p_order_id: order.id,
+      p_order_total: total,
+    });
+  }
+
+  // Send order emails (admin always, customer if email available)
+  try {
+    const { sendOrderEmails } = await import('@/lib/email');
+    await sendOrderEmails({
+      orderId: order.id,
+      customerName: formData.customer_name,
+      phone: formData.phone,
+      city: formData.city,
+      address: formData.address,
+      items: [{ title: productTitle, quantity: formData.quantity, price: priceSnapshot }],
+      subtotal,
+      deliveryFee,
+      discount: 0,
+      total,
+    }, user?.email);
+  } catch {}
 
   revalidatePath('/admin/orders');
   return { success: true, orderId: order.id, total, deliveryFee };
@@ -74,6 +103,24 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
     .eq('id', orderId);
 
   if (error) return { success: false, error: error.message };
+
+  // Award loyalty points when order is delivered (if not already awarded at placement)
+  // This is a safety net — the RPC is idempotent per order_id
+  if (status === 'delivered') {
+    const { data: order } = await supabase
+      .from('orders')
+      .select('user_id, total')
+      .eq('id', orderId)
+      .single();
+    if (order?.user_id) {
+      await supabase.rpc('award_loyalty_points', {
+        p_user_id: order.user_id,
+        p_order_id: orderId,
+        p_order_total: order.total,
+      });
+    }
+  }
+
   revalidatePath('/admin/orders');
   return { success: true };
 }
@@ -109,6 +156,7 @@ export async function createProduct(formData: FormData) {
       specs_json: specs,
       whats_in_box: formData.get('whats_in_box') as string || null,
       is_featured: formData.get('is_featured') === 'true',
+      is_new_arrival: formData.get('is_new_arrival') === 'true',
       is_active: formData.get('is_active') === 'true',
     })
     .select()
@@ -165,12 +213,27 @@ export async function updateProduct(productId: string, formData: FormData) {
       specs_json: specs,
       whats_in_box: formData.get('whats_in_box') as string || null,
       is_featured: formData.get('is_featured') === 'true',
+      is_new_arrival: formData.get('is_new_arrival') === 'true',
       is_active: formData.get('is_active') === 'true',
       updated_at: new Date().toISOString(),
     })
     .eq('id', productId);
 
   if (error) return { success: false, error: error.message };
+
+  // Replace images: delete old ones, insert new ones
+  const imageUrls = (formData.get('image_urls') as string || '').split('\n').filter(Boolean);
+  await supabase.from('product_images').delete().eq('product_id', productId);
+  if (imageUrls.length > 0) {
+    await supabase.from('product_images').insert(
+      imageUrls.map((url, i) => ({
+        product_id: productId,
+        image_url: url.trim(),
+        alt_text: formData.get('title') as string,
+        sort_order: i,
+      }))
+    );
+  }
 
   revalidatePath('/admin/products');
   revalidatePath('/shop');
@@ -200,7 +263,7 @@ export async function adminSignIn(email: string, password: string) {
 export async function adminSignOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  revalidatePath('/admin');
+  redirect('/admin/login');
 }
 
 // ── Profile ───────────────────────────────────────────────────
@@ -306,7 +369,7 @@ export async function deleteReview(reviewId: string) {
 
 // ── Categories ────────────────────────────────────────────────
 export async function createCategory(data: {
-  name: string; slug: string; description?: string; sort_order?: number;
+  name: string; slug: string; description?: string; sort_order?: number; emoji?: string;
 }) {
   const supabase = await createClient();
   const { error } = await supabase.from('categories').insert({
@@ -314,6 +377,7 @@ export async function createCategory(data: {
     slug: data.slug,
     description: data.description || null,
     sort_order: data.sort_order ?? 0,
+    emoji: data.emoji || '📦',
   });
   if (error) return { success: false, error: error.message };
   revalidatePath('/admin/categories');
@@ -322,7 +386,7 @@ export async function createCategory(data: {
 }
 
 export async function updateCategory(id: string, data: {
-  name: string; slug: string; description?: string; sort_order?: number;
+  name: string; slug: string; description?: string; sort_order?: number; emoji?: string;
 }) {
   const supabase = await createClient();
   const { error } = await supabase.from('categories').update({
@@ -330,6 +394,7 @@ export async function updateCategory(id: string, data: {
     slug: data.slug,
     description: data.description || null,
     sort_order: data.sort_order ?? 0,
+    emoji: data.emoji || '📦',
   }).eq('id', id);
   if (error) return { success: false, error: error.message };
   revalidatePath('/admin/categories');
@@ -358,11 +423,15 @@ export async function deleteCategory(id: string) {
 export async function updateSiteSettings(data: Record<string, unknown>) {
   const supabase = await createClient();
   const { data: existing } = await supabase.from('site_settings').select('id').limit(1).single();
+  let error;
   if (existing) {
-    await supabase.from('site_settings').update({ ...data, updated_at: new Date().toISOString() }).eq('id', existing.id);
+    const res = await supabase.from('site_settings').update({ ...data, updated_at: new Date().toISOString() }).eq('id', existing.id);
+    error = res.error;
   } else {
-    await supabase.from('site_settings').insert(data);
+    const res = await supabase.from('site_settings').insert(data);
+    error = res.error;
   }
+  if (error) return { success: false, error: error.message };
   revalidatePath('/');
   revalidatePath('/admin/settings');
   return { success: true };
@@ -559,7 +628,8 @@ export async function validateCoupon(code: string, orderTotal: number) {
 export async function createOrderWithCoupon(
   items: { productId: string; title: string; price: number; quantity: number }[],
   formData: { customer_name: string; phone: string; city: string; address: string; notes: string },
-  couponCode?: string
+  couponCode?: string,
+  customerEmail?: string
 ) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -628,6 +698,52 @@ export async function createOrderWithCoupon(
   for (const item of items) {
     await supabase.rpc('decrement_stock', { product_id: item.productId, qty: item.quantity });
   }
+
+  // Award loyalty points to logged-in users (1 point per Rs. 100 spent)
+  if (user?.id) {
+    await supabase.rpc('award_loyalty_points', {
+      p_user_id: user.id,
+      p_order_id: order.id,
+      p_order_total: total,
+    });
+
+    // Save delivery details to user profile if not already saved
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name, phone, city, address')
+      .eq('id', user.id)
+      .single();
+
+    // Update profile if any field is missing
+    if (profile && (!profile.full_name || !profile.phone || !profile.city || !profile.address)) {
+      await supabase
+        .from('profiles')
+        .update({
+          full_name: profile.full_name || formData.customer_name,
+          phone: profile.phone || formData.phone,
+          city: profile.city || formData.city,
+          address: profile.address || formData.address,
+        })
+        .eq('id', user.id);
+    }
+  }
+
+  // Send order emails
+  try {
+    const { sendOrderEmails } = await import('@/lib/email');
+    await sendOrderEmails({
+      orderId: order.id,
+      customerName: formData.customer_name,
+      phone: formData.phone,
+      city: formData.city,
+      address: formData.address,
+      items: items.map((i) => ({ title: i.title, quantity: i.quantity, price: i.price })),
+      subtotal,
+      deliveryFee,
+      discount,
+      total,
+    }, customerEmail || user?.email);
+  } catch {}
 
   revalidatePath('/admin/orders');
   return { success: true, orderId: order.id, total, deliveryFee, discount };

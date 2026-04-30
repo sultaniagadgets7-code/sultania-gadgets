@@ -1,10 +1,10 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { AbandonedCartsClient } from './AbandonedCartsClient';
 
 export const metadata = { title: 'Abandoned Carts' };
 
 export default async function AbandonedCartsPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data: carts } = await supabase
     .from('abandoned_carts')
     .select('*')

@@ -2,8 +2,9 @@ import type { Metadata } from 'next';
 import { ExchangeForm } from './ExchangeForm';
 
 export const metadata: Metadata = {
-  title: 'Exchange / Return Request',
-  description: 'Submit an exchange or return request for your Sultania Gadgets order.',
+  title: 'Exchange Request — Sultania Gadgets',
+  description: 'Submit an exchange or return request for your Sultania Gadgets order. Defective items exchanged within 3 days.',
+  alternates: { canonical: 'https://sultaniagadgets.com/exchange-request' },
 };
 
 export default function ExchangeRequestPage() {

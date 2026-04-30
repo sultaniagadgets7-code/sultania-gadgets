@@ -1,0 +1,35 @@
+REQUIRED IMAGES FOR SEO
+========================
+
+Please create/add these images to the /public folder:
+
+1. og-image.jpg (1200x630px)
+   - Social media preview image
+   - Shows when sharing on Facebook, Twitter, LinkedIn
+   - Should feature your brand logo and key products
+   - Use high-quality, compressed JPEG
+
+2. FAVICONS (use https://realfavicongenerator.net/)
+   Upload your logo and it will generate all these:
+   
+   - favicon.ico (32x32)
+   - favicon-16x16.png
+   - favicon-32x32.png
+   - apple-touch-icon.png (180x180)
+   - android-chrome-192x192.png
+   - android-chrome-512x512.png
+   - mstile-150x150.png
+
+HOW TO GENERATE FAVICONS:
+1. Go to https://realfavicongenerator.net/
+2. Upload your logo (square, at least 512x512px)
+3. Customize colors if needed
+4. Download the package
+5. Extract all files to this /public folder
+6. Done!
+
+CURRENT STATUS:
+- ❌ og-image.jpg - MISSING (create this manually)
+- ❌ Favicons - MISSING (use realfavicongenerator.net)
+- ✅ site.webmanifest - Created
+- ✅ browserconfig.xml - Created

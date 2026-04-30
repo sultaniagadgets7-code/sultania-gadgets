@@ -59,7 +59,7 @@ export function AdminReviewsTable({ reviews }: { reviews: ReviewRow[] }) {
                   <td className="px-4 py-3">
                     {r.product ? (
                       <Link href={`/product/${r.product.slug}`} target="_blank"
-                        className="text-blue-600 hover:underline flex items-center gap-1 text-xs">
+                        className="text-[#e01e1e] hover:underline flex items-center gap-1 text-xs">
                         {r.product.title.slice(0, 30)}…
                         <ExternalLink className="w-3 h-3" />
                       </Link>

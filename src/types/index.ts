@@ -6,6 +6,7 @@ export interface Category {
   name: string;
   slug: string;
   description: string | null;
+  emoji: string | null;
   sort_order: number;
   created_at: string;
 }
@@ -36,6 +37,7 @@ export interface Product {
   specs_json: Record<string, string> | null;
   whats_in_box: string | null;
   is_featured: boolean;
+  is_new_arrival: boolean;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -67,7 +69,14 @@ export interface Order {
   subtotal: number;
   delivery_fee: number;
   total: number;
+  discount_amount?: number;
   order_source: OrderSource;
+  courier?: string | null;
+  tracking_number?: string | null;
+  dispatched_at?: string | null;
+  cod_collected?: boolean;
+  cod_collected_at?: string | null;
+  cod_collected_by?: string | null;
   created_at: string;
   updated_at: string;
   order_items?: OrderItem[];

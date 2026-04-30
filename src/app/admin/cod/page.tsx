@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { formatPrice } from '@/lib/utils';
 import { CodTable } from './CodTable';
 
 export const metadata: Metadata = { title: 'COD Collection' };
 
 export default async function CodPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data: orders } = await supabase
     .from('orders')

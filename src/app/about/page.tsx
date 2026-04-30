@@ -5,8 +5,16 @@ import { getSiteSettings } from '@/lib/queries';
 import { getWhatsAppUrl } from '@/lib/utils';
 
 export const metadata: Metadata = {
-  title: 'About Us — Sultania Gadgets',
-  description: 'Learn about Sultania Gadgets — Pakistan\'s trusted source for genuine tech accessories with cash on delivery.',
+  title: 'About Us — Sultania Gadgets Pakistan',
+  description: 'Sultania Gadgets is Pakistan\'s trusted source for genuine tech accessories. Chargers, earbuds, cables, power banks — tested before dispatch. Cash on delivery nationwide.',
+  keywords: ['sultania gadgets', 'about sultania gadgets', 'genuine tech accessories pakistan', 'trusted gadgets store pakistan'],
+  alternates: { canonical: 'https://sultaniagadgets.com/about' },
+  openGraph: {
+    title: "About Sultania Gadgets — Pakistan's Trusted Tech Essentials",
+    description: 'Pakistan\'s trusted source for genuine tech accessories. Every product tested before dispatch. Cash on delivery.',
+    url: 'https://sultaniagadgets.com/about',
+    type: 'website',
+  },
 };
 
 export default async function AboutPage() {

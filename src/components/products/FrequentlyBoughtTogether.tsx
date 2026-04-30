@@ -98,10 +98,10 @@ export async function FrequentlyBoughtTogether({ productId, categoryId }: Props)
       </div>
       <div className="mt-6">
         <Link
-          href={`/product/${products[0].slug}`}
+          href={categoryId ? `/category/${products[0].category?.slug || ''}` : '/shop'}
           className="inline-flex items-center gap-2 bg-[#0a0a0a] hover:bg-gray-800 text-white text-xs font-bold uppercase tracking-widest px-6 py-3 rounded-full transition-colors"
         >
-          View All Items
+          View More Like This
         </Link>
       </div>
     </section>

@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { FaqsManager } from './FaqsManager';
 import type { FaqItem } from '@/types';
 
 export const metadata: Metadata = { title: 'FAQs' };
 
 export default async function AdminFaqsPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data } = await supabase
     .from('faq_items')
     .select('*')
