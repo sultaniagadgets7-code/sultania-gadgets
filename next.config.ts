@@ -25,6 +25,11 @@ const nextConfig: NextConfig = {
         : ['sultaniagadgets.com', '*.vercel.app'],
     },
     optimizePackageImports: ['lucide-react', '@supabase/supabase-js', '@supabase/ssr'],
+    // Reduce prefetch timeout to avoid QUIC errors
+    staleTimes: {
+      dynamic: 30,
+      static: 180,
+    },
   },
   turbopack: {
     root: path.resolve(__dirname),

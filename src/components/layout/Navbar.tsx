@@ -126,7 +126,7 @@ export function Navbar({ categories = [] }: NavbarProps) {
                   </Link>
                   <div className="border-t border-white/10 my-2" />
                   {categories.map((cat) => (
-                    <Link key={cat.id} href={`/category/${cat.slug}`}
+                    <Link key={cat.id} href={`/category/${cat.slug}`} prefetch={false}
                       className="flex items-center gap-3 px-4 py-3 text-sm text-white/70 hover:bg-white/8 hover:text-white transition-colors rounded-xl mx-1">
                       <span className="text-base w-6 text-center" aria-hidden="true">
                         {cat.emoji || categoryIcons[cat.slug] || '📦'}
@@ -139,11 +139,11 @@ export function Navbar({ categories = [] }: NavbarProps) {
             </div>
 
             {/* Deals */}
-            <Link href="/deals"
+            <Link href="/deals" prefetch={false}
               className="text-sm font-bold text-[#dc2626] px-4 py-2.5 rounded-xl transition-all duration-200 hover:bg-[#dc2626]/10">
               🔥 Deals
             </Link>
-            <Link href="/bundles"
+            <Link href="/bundles" prefetch={false}
               className={`text-sm font-semibold rounded-xl transition-all duration-200 px-4 py-2.5 ${
                 pathname === '/bundles' ? 'text-white bg-white/10' : 'text-white/70 hover:text-white hover:bg-white/8'
               }`}>
@@ -243,7 +243,7 @@ export function Navbar({ categories = [] }: NavbarProps) {
                     <span aria-hidden="true">🛍️</span> All Products
                   </Link>
                   {categories.map((cat) => (
-                    <Link key={cat.id} href={`/category/${cat.slug}`}
+                    <Link key={cat.id} href={`/category/${cat.slug}`} prefetch={false}
                       className="flex items-center gap-3 py-3 pl-4 text-base text-white/60 hover:text-white transition-colors touch-target"
                       style={{ touchAction: 'manipulation' }}>
                       <span aria-hidden="true">{cat.emoji || categoryIcons[cat.slug] || '📦'}</span>
@@ -254,7 +254,7 @@ export function Navbar({ categories = [] }: NavbarProps) {
               )}
             </div>
 
-            <Link href="/bundles" className="flex items-center py-4 text-base font-semibold text-white/70 hover:text-white transition-colors border-b border-white/8 touch-target" style={{ touchAction: 'manipulation' }}>Bundles</Link>            <Link href="/deals" className="flex items-center py-4 text-base font-bold text-[#dc2626] hover:text-[#f87171] transition-colors border-b border-white/8 touch-target" style={{ touchAction: 'manipulation' }}>🔥 Deals & Discounts</Link>
+            <Link href="/bundles" className="flex items-center py-4 text-base font-semibold text-white/70 hover:text-white transition-colors border-b border-white/8 touch-target" prefetch={false} style={{ touchAction: 'manipulation' }}>Bundles</Link>            <Link href="/deals" className="flex items-center py-4 text-base font-bold text-[#dc2626] hover:text-[#f87171] transition-colors border-b border-white/8 touch-target" prefetch={false} style={{ touchAction: 'manipulation' }}>🔥 Deals & Discounts</Link>
             <Link href="/about" className="flex items-center py-4 text-base font-semibold text-white/70 hover:text-white transition-colors border-b border-white/8 touch-target" style={{ touchAction: 'manipulation' }}>About Us</Link>
             <Link href="/contact" className="flex items-center py-4 text-base font-semibold text-white/70 hover:text-white transition-colors border-b border-white/8 touch-target" style={{ touchAction: 'manipulation' }}>Contact</Link>
             <Link href="/compare" className="flex items-center py-4 text-base font-semibold text-white/70 hover:text-white transition-colors border-b border-white/8 touch-target" style={{ touchAction: 'manipulation' }}>Compare Products</Link>
