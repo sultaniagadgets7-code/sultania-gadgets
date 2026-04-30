@@ -1,6 +1,6 @@
 'use client';
 
-import { StickyOrderBar } from './StickyOrderBar';
+import { StickyOrderBar } from '@/app/product/[slug]/StickyOrderBar';
 import { SocialProofToast } from './SocialProofToast';
 import { ExitIntentPopup } from './ExitIntentPopup';
 
@@ -12,17 +12,23 @@ interface Props {
 }
 
 export function ProductPageClient({ productTitle, price, isOutOfStock, whatsappNumber }: Props) {
+  if (isOutOfStock) {
+    return (
+      <>
+        <SocialProofToast productTitle={productTitle} />
+        <ExitIntentPopup whatsappNumber={whatsappNumber} />
+      </>
+    );
+  }
+
   return (
     <>
       <SocialProofToast productTitle={productTitle} />
       <ExitIntentPopup whatsappNumber={whatsappNumber} />
       <StickyOrderBar
-        title={productTitle}
         price={price}
-        isOutOfStock={isOutOfStock}
-        onOrder={() => {
-          document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }}
+        productTitle={productTitle}
+        whatsappNumber={whatsappNumber}
       />
     </>
   );
