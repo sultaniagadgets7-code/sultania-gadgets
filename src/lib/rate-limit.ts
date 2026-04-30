@@ -12,6 +12,7 @@ export const rateLimitConfigs = {
   upload: { interval: 60000, maxRequests: 5 }, // 5 uploads per minute
   api: { interval: 60000, maxRequests: 60 }, // 60 requests per minute
   auth: { interval: 300000, maxRequests: 5 }, // 5 attempts per 5 minutes
+  contact: { interval: 60000, maxRequests: 10 }, // 10 requests per minute for contact/newsletter
 };
 
 export function getClientIp(request: NextRequest): string {
