@@ -1,12 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { adminSignIn } from '@/lib/actions';
 import { Zap, AlertCircle } from 'lucide-react';
 
 export default function AdminLoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -17,11 +14,25 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError('');
 
-    const result = await adminSignIn(email, password);
-    if (result.success) {
-      window.location.href = '/admin';
-    } else {
-      setError(result.error || 'Invalid credentials');
+    try {
+      const res = await fetch('/api/admin-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+        credentials: 'same-origin',
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        // Hard navigate so browser picks up the new session cookies
+        window.location.replace('/admin');
+      } else {
+        setError(data.error || 'Invalid credentials');
+        setLoading(false);
+      }
+    } catch {
+      setError('Network error. Please try again.');
       setLoading(false);
     }
   }
