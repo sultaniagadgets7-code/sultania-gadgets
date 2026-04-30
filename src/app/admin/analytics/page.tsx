@@ -20,7 +20,19 @@ function getDateRange(daysAgo: number) {
 }
 
 export default async function AdminAnalyticsPage() {
-  const supabase = createAdminClient();
+  let supabase;
+  try {
+    supabase = createAdminClient();
+  } catch {
+    return (
+      <div className="p-6">
+        <h1 className="text-xl font-bold text-gray-900 mb-4">Analytics</h1>
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-sm text-amber-800">
+          <strong>Database connection error.</strong> Please check your Supabase service role key in Vercel environment variables.
+        </div>
+      </div>
+    );
+  }
 
   // Fetch orders and order_items separately to avoid nested query issues
   const { data: rawOrders } = await supabase

@@ -1,20 +1,32 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { getDashboardStats } from '@/lib/queries';
 import { Package, ShoppingBag, Clock, CheckCircle, Truck, AlertTriangle } from 'lucide-react';
 
 export const metadata: Metadata = { title: 'Dashboard' };
 
+// Safe stats fetch — never throws
+async function safeGetStats() {
+  try {
+    const { getDashboardStats } = await import('@/lib/queries');
+    return await getDashboardStats();
+  } catch {
+    return {
+      totalProducts: 0, totalOrders: 0, pendingOrders: 0,
+      confirmedOrders: 0, deliveredOrders: 0, lowStock: 0, outOfStock: 0,
+    };
+  }
+}
+
 export default async function AdminDashboardPage() {
-  const stats = await getDashboardStats();
+  const stats = await safeGetStats();
 
   const cards = [
-    { label: 'Active Products', value: stats.totalProducts, icon: Package, color: 'text-blue-600', bg: 'bg-blue-50', href: '/admin/products' },
-    { label: 'Total Orders', value: stats.totalOrders, icon: ShoppingBag, color: 'text-gray-600', bg: 'bg-gray-50', href: '/admin/orders' },
-    { label: 'Pending Orders', value: stats.pendingOrders, icon: Clock, color: 'text-orange-600', bg: 'bg-orange-50', href: '/admin/orders?status=pending' },
-    { label: 'Confirmed Orders', value: stats.confirmedOrders, icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50', href: '/admin/orders?status=confirmed' },
-    { label: 'Delivered Orders', value: stats.deliveredOrders, icon: Truck, color: 'text-blue-600', bg: 'bg-blue-50', href: '/admin/orders?status=delivered' },
-    { label: 'Low Stock Items', value: stats.lowStock, icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-50', href: '/admin/products' },
+    { label: 'Active Products',   value: stats.totalProducts,   icon: Package,       color: 'text-blue-600',   bg: 'bg-blue-50',   href: '/admin/products' },
+    { label: 'Total Orders',      value: stats.totalOrders,     icon: ShoppingBag,   color: 'text-gray-600',   bg: 'bg-gray-50',   href: '/admin/orders' },
+    { label: 'Pending Orders',    value: stats.pendingOrders,   icon: Clock,         color: 'text-orange-600', bg: 'bg-orange-50', href: '/admin/orders?status=pending' },
+    { label: 'Confirmed Orders',  value: stats.confirmedOrders, icon: CheckCircle,   color: 'text-green-600',  bg: 'bg-green-50',  href: '/admin/orders?status=confirmed' },
+    { label: 'Delivered Orders',  value: stats.deliveredOrders, icon: Truck,         color: 'text-blue-600',   bg: 'bg-blue-50',   href: '/admin/orders?status=delivered' },
+    { label: 'Low Stock Items',   value: stats.lowStock,        icon: AlertTriangle, color: 'text-red-600',    bg: 'bg-red-50',    href: '/admin/stock' },
   ];
 
   return (
@@ -30,6 +42,13 @@ export default async function AdminDashboardPage() {
           </Link>
         </div>
       </div>
+
+      {stats.totalOrders === 0 && stats.totalProducts === 0 && (
+        <div className="mb-4 bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800">
+          <strong>Note:</strong> Stats showing 0 — service role key may need updating in Vercel.{' '}
+          <Link href="/admin/debug" className="underline font-semibold">Run diagnostics →</Link>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
         {cards.map(({ label, value, icon: Icon, color, bg, href }) => (
@@ -57,8 +76,7 @@ export default async function AdminDashboardPage() {
       </div>
 
       {stats.lowStock > 0 && (
-        <Link href="/admin/stock"
-          className="mt-4 flex items-center gap-3 bg-red-50 border border-red-200 rounded-[20px] p-5 hover:border-red-400 transition-colors">
+        <Link href="/admin/stock" className="mt-4 flex items-center gap-3 bg-red-50 border border-red-200 rounded-[20px] p-5 hover:border-red-400 transition-colors">
           <AlertTriangle className="w-5 h-5 text-red-600 shrink-0" aria-hidden="true" />
           <div>
             <p className="font-bold text-red-800 text-sm">
