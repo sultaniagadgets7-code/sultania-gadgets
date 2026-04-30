@@ -130,7 +130,7 @@ export function OrderForm({
 
       {/* Primary CTA */}
       <button type="button" onClick={handleOrderNow}
-        className="btn-3d w-full bg-[#dc2626] hover:bg-[#b91c1c] text-white font-black label py-4 rounded-full transition-colors flex items-center justify-center gap-2 touch-manipulation"
+        className="btn-3d w-full bg-[#dc2626] hover:bg-[#b91c1c] text-white font-black label py-4 rounded-xl transition-colors flex items-center justify-center gap-2 touch-manipulation"
         style={{ touchAction: 'manipulation' }}>
         <ShoppingBag className="w-4 h-4" aria-hidden="true" />
         Order Now — Cash on Delivery
@@ -139,7 +139,7 @@ export function OrderForm({
 
       {/* Add to cart */}
       <button type="button" onClick={handleAddToCart}
-        className={`w-full font-bold label py-4 rounded-full transition-all border flex items-center justify-center gap-2 touch-manipulation ${
+        className={`w-full font-bold label py-4 rounded-xl transition-all border flex items-center justify-center gap-2 touch-manipulation ${
           added ? 'bg-green-600 text-white border-green-600' : 'bg-white text-[#0a0a0f] border-[#e2e8f0] hover:border-[#0a0a0f] hover:bg-[#f8fafc]'
         }`}
         style={{ touchAction: 'manipulation' }}>
@@ -155,7 +155,7 @@ export function OrderForm({
       {/* WhatsApp */}
       <a href={getWhatsAppUrl(whatsappNumber, getProductWhatsAppMessage(productTitle))}
         target="_blank" rel="noopener noreferrer"
-        className="btn-3d flex items-center justify-center gap-2 w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold label py-4 rounded-full transition-colors touch-manipulation"
+        className="btn-3d flex items-center justify-center gap-2 w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold label py-4 rounded-xl transition-colors touch-manipulation"
         style={{ touchAction: 'manipulation' }}>
         <MessageCircle className="w-4 h-4" aria-hidden="true" />
         WhatsApp — Instant Reply

@@ -193,25 +193,31 @@ a { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 }
 
 /* ══════════════════════════════════════════════════════════════
-   3D BUTTON EFFECTS
+   SIMPLE BUTTON STYLES (Clean & Modern)
 ══════════════════════════════════════════════════════════════ */
 .btn-3d {
   position: relative;
-  transform: translateY(0);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-  box-shadow: 0 4px 0 #991b1b, 0 6px 16px rgba(220,38,38,0.35);
+  transition: all 0.2s ease;
 }
-.btn-3d:hover  { transform: translateY(-2px); box-shadow: 0 6px 0 #991b1b, 0 10px 24px rgba(220,38,38,0.45); }
-.btn-3d:active { transform: translateY(2px);  box-shadow: 0 2px 0 #991b1b, 0 4px 8px rgba(220,38,38,0.25); }
+.btn-3d:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.btn-3d:active {
+  transform: translateY(0);
+}
 
 .btn-3d-dark {
   position: relative;
-  transform: translateY(0);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-  box-shadow: 0 4px 0 rgba(0,0,0,0.5), 0 6px 16px rgba(0,0,0,0.3);
+  transition: all 0.2s ease;
 }
-.btn-3d-dark:hover  { transform: translateY(-2px); box-shadow: 0 6px 0 rgba(0,0,0,0.6), 0 10px 24px rgba(0,0,0,0.4); }
-.btn-3d-dark:active { transform: translateY(2px);  box-shadow: 0 2px 0 rgba(0,0,0,0.4), 0 4px 8px rgba(0,0,0,0.2); }
+.btn-3d-dark:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.btn-3d-dark:active {
+  transform: translateY(0);
+}
 
 /* ══════════════════════════════════════════════════════════════
    HERO 3D EFFECT — blackish red gradient

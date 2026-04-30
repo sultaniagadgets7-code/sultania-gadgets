@@ -120,7 +120,7 @@ export default async function HomePage() {
             </p>
             <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-3">
               <Link href="/shop"
-                className="btn-3d inline-flex items-center justify-center gap-2 bg-[#dc2626] hover:bg-[#b91c1c] text-white font-bold text-sm uppercase tracking-widest px-7 py-3.5 rounded-full transition-colors w-full sm:w-auto">
+                className="btn-3d inline-flex items-center justify-center gap-2 bg-[#dc2626] hover:bg-[#b91c1c] text-white font-bold text-sm uppercase tracking-widest px-7 py-3.5 rounded-xl transition-colors w-full sm:w-auto">
                 Shop Now <ArrowRight className="w-4 h-4" />
               </Link>
               <a href={getWhatsAppUrl(wa, 'Assalamualaikum, I want to browse your products.')}
@@ -352,7 +352,7 @@ export default async function HomePage() {
               </p>
               <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-3">
                 <Link href="/account/loyalty"
-                  className="btn-3d inline-flex items-center justify-center gap-2 bg-[#dc2626] hover:bg-[#b91c1c] text-white font-bold text-sm uppercase tracking-widest px-7 py-3.5 rounded-full transition-colors w-full sm:w-auto">
+                  className="btn-3d inline-flex items-center justify-center gap-2 bg-[#dc2626] hover:bg-[#b91c1c] text-white font-bold text-sm uppercase tracking-widest px-7 py-3.5 rounded-xl transition-colors w-full sm:w-auto">
                   <Star className="w-4 h-4" /> View My Points
                 </Link>
                 <Link href="/shop"
@@ -504,7 +504,7 @@ export default async function HomePage() {
               <p className="text-slate-500 text-sm mb-8 max-w-xs mx-auto">Chat with us on WhatsApp — fast response, honest advice, no pressure.</p>
               <a href={getWhatsAppUrl(wa, 'Assalamualaikum, I need help choosing a product.')}
                 target="_blank" rel="noopener noreferrer"
-                className="btn-3d inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-sm uppercase tracking-widest px-8 py-4 rounded-full transition-colors">
+                className="btn-3d inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-sm uppercase tracking-widest px-8 py-4 rounded-xl transition-colors">
                 <MessageCircle className="w-4 h-4" /> Chat on WhatsApp
               </a>
             </div>

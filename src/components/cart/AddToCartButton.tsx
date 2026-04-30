@@ -26,7 +26,7 @@ export function AddToCartButton({ productId, slug, title, price, image, maxQty, 
   return (
     <button onClick={handleAdd} disabled={maxQty === 0}
       className={cn(
-        'inline-flex items-center justify-center font-bold uppercase tracking-widest rounded-full transition-all duration-200 touch-manipulation btn-3d',
+        'inline-flex items-center justify-center font-bold uppercase tracking-widest rounded-xl transition-all duration-200 touch-manipulation btn-3d',
         added ? 'bg-green-600 text-white' : 'bg-[#dc2626] hover:bg-[#b91c1c] text-white',
         'disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none',
         sizes[size], className

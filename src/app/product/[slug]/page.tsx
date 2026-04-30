@@ -269,7 +269,7 @@ export default async function ProductPage({ params }: Props) {
                 <NotifyBackInStock productId={product.id} productTitle={product.title} />
                 <a href={getWhatsAppUrl(wa, `Assalamualaikum, is *${product.title}* available?`)}
                   target="_blank" rel="noopener noreferrer"
-                  className="btn-3d flex items-center justify-center gap-2 w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold label py-4 rounded-full transition-colors">
+                  className="btn-3d flex items-center justify-center gap-2 w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold label py-4 rounded-xl transition-colors">
                   <MessageCircle className="w-4 h-4" /> Ask on WhatsApp
                 </a>
               </div>
@@ -364,7 +364,7 @@ export default async function ProductPage({ params }: Props) {
               </div>
               <a href={getWhatsAppUrl(wa, getProductWhatsAppMessage(product.title))}
                 target="_blank" rel="noopener noreferrer"
-                className="btn-3d flex items-center justify-center gap-2 w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold label py-4 rounded-[20px] transition-colors">
+                className="btn-3d flex items-center justify-center gap-2 w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold label py-4 rounded-xl transition-colors">
                 <MessageCircle className="w-4 h-4" /> Ask on WhatsApp
               </a>
             </div>
