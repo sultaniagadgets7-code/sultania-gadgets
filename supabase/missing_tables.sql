@@ -3,8 +3,8 @@
 -- Run this after schema.sql
 -- ============================================================
 
--- Add missing columns to orders table
-ALTER TABLE orders ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
+-- First, add missing columns to orders table (without constraints)
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS user_id UUID;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS coupon_id UUID;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount_amount NUMERIC(10,2) DEFAULT 0;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS notes_internal TEXT;
@@ -49,7 +49,12 @@ CREATE TABLE IF NOT EXISTS coupons (
 CREATE INDEX IF NOT EXISTS idx_coupons_code ON coupons(code);
 CREATE INDEX IF NOT EXISTS idx_coupons_active ON coupons(is_active);
 
--- Add foreign key for coupon_id
+-- Now add foreign key constraints after tables exist
+ALTER TABLE orders DROP CONSTRAINT IF EXISTS fk_orders_user;
+ALTER TABLE orders ADD CONSTRAINT fk_orders_user 
+  FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE SET NULL;
+
+ALTER TABLE orders DROP CONSTRAINT IF EXISTS fk_orders_coupon;
 ALTER TABLE orders ADD CONSTRAINT fk_orders_coupon 
   FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON DELETE SET NULL;
 
