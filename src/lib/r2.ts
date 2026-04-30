@@ -16,7 +16,8 @@ const r2Client = new S3Client({
 });
 
 const BUCKET_NAME = process.env.R2_BUCKET_NAME || 'sultania-gadgets-images';
-const PUBLIC_URL = process.env.R2_PUBLIC_URL || 'https://pub-xxxxx.r2.dev';
+// Fallback URL is only used if R2_PUBLIC_URL env var is not set (should always be set in production)
+const PUBLIC_URL = process.env.R2_PUBLIC_URL || 'https://pub-bdcc7c4e796b4cf7a97402a408b5dc6c.r2.dev';
 
 /**
  * Upload file to R2

@@ -56,8 +56,16 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // TODO: Send welcome email via Resend
-    // await sendWelcomeEmail(email);
+    // Send welcome email via Resend (if configured)
+    if (process.env.RESEND_API_KEY) {
+      try {
+        const { sendWelcomeEmail } = await import('@/lib/email');
+        await sendWelcomeEmail(email);
+      } catch (emailError) {
+        // Log but don't fail the subscription if email fails
+        console.error('Welcome email failed:', emailError);
+      }
+    }
 
     return NextResponse.json({
       success: true,

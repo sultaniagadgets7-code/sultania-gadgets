@@ -134,3 +134,76 @@ export async function sendOrderEmails(data: OrderEmailData, customerEmail?: stri
     });
   }
 }
+
+export async function sendWelcomeEmail(email: string) {
+  if (!process.env.RESEND_API_KEY) return;
+  const resend = new Resend(process.env.RESEND_API_KEY);
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f7f7f7;font-family:Arial,sans-serif;">
+  <div style="max-width:560px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+    
+    <!-- Header -->
+    <div style="background:#0a0a0a;padding:24px 32px;">
+      <p style="margin:0;font-size:22px;font-weight:900;color:#e01e1e;letter-spacing:-0.04em;">SULTANIA GADGETS</p>
+      <p style="margin:4px 0 0;font-size:12px;color:#666;text-transform:uppercase;letter-spacing:0.08em;">
+        Welcome to Our Newsletter! 🎉
+      </p>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:28px 32px;">
+      <p style="margin:0 0 16px;font-size:16px;font-weight:700;color:#0a0a0a;">
+        Assalamualaikum! Welcome to Sultania Gadgets
+      </p>
+      
+      <p style="margin:0 0 16px;font-size:14px;color:#555;line-height:1.6;">
+        Thank you for subscribing to our newsletter! You'll now be the first to know about:
+      </p>
+
+      <ul style="margin:0 0 20px;padding-left:20px;font-size:14px;color:#555;line-height:1.8;">
+        <li>🎁 Exclusive deals and discounts</li>
+        <li>📱 New product launches</li>
+        <li>⚡ Flash sales and limited offers</li>
+        <li>💡 Tech tips and product guides</li>
+      </ul>
+
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px 16px;margin-bottom:20px;">
+        <p style="margin:0;font-size:13px;font-weight:700;color:#15803d;">🎁 Special Welcome Offer</p>
+        <p style="margin:4px 0 0;font-size:13px;color:#166534;">
+          Use code <strong>WELCOME10</strong> for 10% off your first order!
+        </p>
+      </div>
+
+      <div style="text-align:center;margin:24px 0;">
+        <a href="https://sultaniagadgets.com/shop" 
+           style="display:inline-block;background:#e01e1e;color:#fff;text-decoration:none;padding:12px 32px;border-radius:25px;font-weight:700;font-size:14px;">
+          Shop Now
+        </a>
+      </div>
+
+      <p style="margin:20px 0 0;font-size:13px;color:#888;line-height:1.6;">
+        Questions? Reply to this email or WhatsApp us at <strong>+92 300 9515230</strong>
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="background:#f7f7f7;padding:16px 32px;text-align:center;">
+      <p style="margin:0 0 8px;font-size:12px;color:#aaa;">Sultania Gadgets · sultaniagadgets.com</p>
+      <p style="margin:0;font-size:11px;color:#ccc;">
+        You're receiving this because you subscribed to our newsletter.
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  await resend.emails.send({
+    from: FROM,
+    to: email,
+    subject: '🎉 Welcome to Sultania Gadgets Newsletter!',
+    html,
+  });
+}
