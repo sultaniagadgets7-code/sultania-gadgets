@@ -7,6 +7,7 @@ import { CheckCircle, AlertCircle, MessageCircle, ShoppingBag, Tag, X } from 'lu
 import { useCart } from '@/lib/cart';
 import { formatPrice, getWhatsAppUrl } from '@/lib/utils';
 import { validateCoupon, createOrderWithCoupon } from '@/lib/actions';
+import { CheckoutAuthPrompt } from '@/components/auth/CheckoutAuthPrompt';
 
 interface Props {
   whatsappNumber: string;
@@ -172,6 +173,9 @@ export function CartCheckout({ whatsappNumber, profile, deliveryFee = 200, isGue
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+          {/* Auth Prompt for Guest Users */}
+          {isGuest && <CheckoutAuthPrompt />}
+
           <p className="text-xs font-bold uppercase tracking-widest text-[#94a3b8] mb-2">Delivery Details</p>
 
           {state === 'error' && (
@@ -274,16 +278,6 @@ export function CartCheckout({ whatsappNumber, profile, deliveryFee = 200, isGue
             {state === 'loading' && <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>}
             {state === 'loading' ? 'Placing Order...' : 'Place Order — Cash on Delivery'}
           </button>
-
-          {isGuest && (
-            <p className="text-center text-xs text-[#94a3b8]">
-              Have an account?{' '}
-              <a href="/auth/login?next=/checkout" className="text-[#dc2626] font-semibold hover:underline">
-                Sign in
-              </a>{' '}
-              to auto-fill your details &amp; earn loyalty points.
-            </p>
-          )}
         </form>
 
         {/* Order summary */}
