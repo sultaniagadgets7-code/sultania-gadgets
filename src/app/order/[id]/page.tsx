@@ -56,39 +56,50 @@ export default async function OrderDetailsPage({ params }: Props) {
   const { id } = await params;
   const admin = createAdminClient();
 
-  const { data: order, error } = await admin
+  // Fetch order with items
+  const { data: order, error: orderError } = await admin
     .from('orders')
-    .select(`
-      *,
-      order_items (
-        id,
-        product_id,
-        product_title_snapshot,
-        price_snapshot,
-        quantity,
-        product:products (
-          slug,
-          product_images (image_url, alt_text)
-        )
-      )
-    `)
-    .eq('id', id)
+    .select('*')
+    .eq('id', id.toLowerCase())
     .single();
 
-  if (error || !order) {
+  if (orderError || !order) {
+    console.error('Order fetch error:', orderError);
     notFound();
   }
+
+  // Fetch order items with product details
+  const { data: orderItems } = await admin
+    .from('order_items')
+    .select(`
+      id,
+      product_id,
+      product_title_snapshot,
+      price_snapshot,
+      quantity,
+      product:products (
+        slug,
+        product_images (image_url, alt_text)
+      )
+    `)
+    .eq('order_id', order.id);
+
+  // Attach items to order
+  const orderWithItems = {
+    ...order,
+    order_items: orderItems || [],
+  };
 
   const settings = await getSiteSettings();
   const wa = settings?.whatsapp_number || process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '923001234567';
 
-  const cfg = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.pending;
+  const cfg = STATUS_CONFIG[orderWithItems.status] ?? STATUS_CONFIG.pending;
   const Icon = cfg.icon;
-  const shortId = order.id.slice(0, 8).toUpperCase();
+  const shortId = orderWithItems.id.slice(0, 8).toUpperCase();
 
   // Calculate subtotal (before delivery fee)
-  const itemsTotal = order.order_items?.reduce((sum: number, item: any) => sum + (item.price_snapshot * item.quantity), 0) || 0;
-  const deliveryFee = order.total - itemsTotal;
+  const itemsTotal = orderWithItems.order_items?.reduce((sum: number, item: any) => sum + (item.price_snapshot * item.quantity), 0) || 0;
+  const deliveryFee = orderWithItems.total - itemsTotal;
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-8 py-6 sm:py-10">
@@ -103,7 +114,7 @@ export default async function OrderDetailsPage({ params }: Props) {
           Order #{shortId}
         </h1>
         <p className="text-sm text-[#64748b] mt-1">
-          Placed on {new Date(order.created_at).toLocaleDateString('en-PK', { 
+          Placed on {new Date(orderWithItems.created_at).toLocaleDateString('en-PK', { 
             day: 'numeric', 
             month: 'long', 
             year: 'numeric',
@@ -136,7 +147,7 @@ export default async function OrderDetailsPage({ params }: Props) {
               Order Items
             </h2>
             <div className="space-y-4">
-              {order.order_items?.map((item: any) => {
+              {orderWithItems.order_items?.map((item: any) => {
                 const imageUrl = item.product?.product_images?.[0]?.image_url || '/placeholder-product.jpg';
                 const imageAlt = item.product?.product_images?.[0]?.alt_text || item.product_title_snapshot;
                 
@@ -185,15 +196,15 @@ export default async function OrderDetailsPage({ params }: Props) {
                 <span>Delivery Fee</span>
                 <span>{formatPrice(deliveryFee)}</span>
               </div>
-              {order.coupon_code && order.discount_amount && (
+              {orderWithItems.coupon_code && orderWithItems.discount_amount && (
                 <div className="flex justify-between text-sm text-green-600 font-semibold">
-                  <span>Discount ({order.coupon_code})</span>
-                  <span>−{formatPrice(order.discount_amount)}</span>
+                  <span>Discount ({orderWithItems.coupon_code})</span>
+                  <span>−{formatPrice(orderWithItems.discount_amount)}</span>
                 </div>
               )}
               <div className="flex justify-between font-black text-lg text-[#0f172a] pt-2 border-t border-[#e2e8f0]">
                 <span>Total</span>
-                <span>{formatPrice(order.total)}</span>
+                <span>{formatPrice(orderWithItems.total)}</span>
               </div>
               <p className="text-xs text-[#94a3b8] text-center pt-2">
                 Payment Method: Cash on Delivery (COD)
@@ -202,13 +213,13 @@ export default async function OrderDetailsPage({ params }: Props) {
           </div>
 
           {/* Order Notes */}
-          {order.notes && (
+          {orderWithItems.notes && (
             <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-2xl p-5">
               <h3 className="font-bold text-sm text-[#0f172a] mb-2 flex items-center gap-2">
                 <FileText className="w-4 h-4 text-[#94a3b8]" />
                 Order Notes
               </h3>
-              <p className="text-sm text-[#64748b]">{order.notes}</p>
+              <p className="text-sm text-[#64748b]">{orderWithItems.notes}</p>
             </div>
           )}
         </div>
@@ -223,14 +234,14 @@ export default async function OrderDetailsPage({ params }: Props) {
                 <User className="w-4 h-4 text-[#94a3b8] mt-0.5 shrink-0" />
                 <div>
                   <p className="text-xs text-[#94a3b8] uppercase tracking-wider mb-0.5">Name</p>
-                  <p className="text-sm font-semibold text-[#0f172a]">{order.customer_name}</p>
+                  <p className="text-sm font-semibold text-[#0f172a]">{orderWithItems.customer_name}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <Phone className="w-4 h-4 text-[#94a3b8] mt-0.5 shrink-0" />
                 <div>
                   <p className="text-xs text-[#94a3b8] uppercase tracking-wider mb-0.5">Phone</p>
-                  <p className="text-sm font-semibold text-[#0f172a]">{order.phone}</p>
+                  <p className="text-sm font-semibold text-[#0f172a]">{orderWithItems.phone}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -238,9 +249,9 @@ export default async function OrderDetailsPage({ params }: Props) {
                 <div>
                   <p className="text-xs text-[#94a3b8] uppercase tracking-wider mb-0.5">Delivery Address</p>
                   <p className="text-sm font-semibold text-[#0f172a]">
-                    {order.address}
+                    {orderWithItems.address}
                     <br />
-                    {order.city}
+                    {orderWithItems.city}
                   </p>
                 </div>
               </div>
@@ -259,7 +270,7 @@ export default async function OrderDetailsPage({ params }: Props) {
               Contact Support
             </a>
             <a
-              href={`/api/invoice/${order.id}`}
+              href={`/api/invoice/${orderWithItems.id}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 w-full bg-[#f8fafc] border border-[#e2e8f0] text-[#64748b] hover:bg-[#f1f5f9] font-bold text-xs uppercase tracking-widest py-3.5 rounded-full transition-colors touch-manipulation"
