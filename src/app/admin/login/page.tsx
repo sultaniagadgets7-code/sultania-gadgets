@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createBrowserClient } from '@supabase/ssr';
 import { Zap, AlertCircle } from 'lucide-react';
 
 export default function AdminLoginPage() {
@@ -9,31 +10,30 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Create Supabase client directly in browser — this sets cookies properly
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    try {
-      const res = await fetch('/api/admin-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-        credentials: 'same-origin',
-      });
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-      const data = await res.json();
-
-      if (data.success) {
-        window.location.replace('/admin');
-      } else {
-        setError(data.error || 'Invalid credentials');
-        setLoading(false);
-      }
-    } catch {
-      setError('Network error. Please try again.');
+    if (signInError) {
+      setError(signInError.message || 'Invalid credentials');
       setLoading(false);
+      return;
     }
+
+    // Session is now set in browser cookies — hard navigate to admin
+    window.location.href = '/admin';
   }
 
   return (
