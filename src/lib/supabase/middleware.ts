@@ -42,47 +42,54 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url);
       }
 
-      // Check if user has admin role
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('is_admin, email')
-        .eq('id', user.id)
-        .single();
+      const adminEmail = process.env.ADMIN_EMAIL;
 
-      // Check admin access - allow if is_admin is true
-      // If column doesn't exist (error code 42703), fall back to email check
-      const isColumnMissing = error?.code === '42703' || error?.message?.includes('column') || error?.message?.includes('is_admin');
-      
-      if (isColumnMissing) {
-        // Column doesn't exist yet - allow access based on email match with admin email
-        const adminEmail = process.env.ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-        if (!adminEmail || user.email !== adminEmail) {
-          console.warn(`Admin column missing. Access denied for user ${user.email}`);
+      // Fast path: email matches admin email directly
+      if (adminEmail && user.email === adminEmail) {
+        // Allow through — trusted admin email
+      } else {
+        // Try is_admin column check
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', user.id)
+          .single();
+
+        const columnMissing = error?.code === '42703' || (error?.message ?? '').includes('is_admin');
+
+        if (columnMissing) {
+          // Column not yet created — deny non-admin-email users
+          console.warn(`is_admin column missing in DB. Denying access for ${user.email}`);
           const url = request.nextUrl.clone();
           url.pathname = '/admin/login';
           return NextResponse.redirect(url);
         }
-        // Admin email matches - allow through
-      } else if (error || !profile || !profile.is_admin) {
-        console.warn(`Unauthorized admin access attempt by user ${user.id} (${user.email})`);
-        const url = request.nextUrl.clone();
-        url.pathname = '/admin/login';
-        return NextResponse.redirect(url);
+
+        if (error || !profile?.is_admin) {
+          console.warn(`Unauthorized admin access attempt by ${user.email}`);
+          const url = request.nextUrl.clone();
+          url.pathname = '/admin/login';
+          return NextResponse.redirect(url);
+        }
       }
     }
 
     // Redirect logged-in admin away from login page
     if (request.nextUrl.pathname === '/admin/login' && user) {
-      const { data: profile, error } = await supabase
+      const adminEmail = process.env.ADMIN_EMAIL;
+      if (adminEmail && user.email === adminEmail) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/admin';
+        return NextResponse.redirect(url);
+      }
+
+      const { data: profile } = await supabase
         .from('profiles')
         .select('is_admin')
         .eq('id', user.id)
         .single();
 
-      const isColumnMissing = error?.code === '42703' || error?.message?.includes('is_admin');
-      const adminEmail = process.env.ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-
-      if (profile?.is_admin || (isColumnMissing && adminEmail && user.email === adminEmail)) {
+      if (profile?.is_admin) {
         const url = request.nextUrl.clone();
         url.pathname = '/admin';
         return NextResponse.redirect(url);
