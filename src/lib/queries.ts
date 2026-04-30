@@ -49,35 +49,69 @@ export async function getSiteSettings(): Promise<SiteSettings | null> {
 
 export async function getFeaturedProducts(): Promise<Product[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  
+  // Fetch featured products
+  const { data: products, error } = await supabase
     .from('products')
-    .select('id, slug, title, price, compare_at_price, badge, stock_quantity, category:categories(id, name, slug), product_images(image_url, alt_text, sort_order)')
+    .select('id, slug, title, price, compare_at_price, badge, stock_quantity, category_id')
     .eq('is_featured', true)
     .eq('is_active', true)
     .order('created_at', { ascending: false })
     .limit(12);
-  if (error) return [];
-  return (data ?? []) as unknown as Product[];
+    
+  if (error || !products) return [];
+
+  // Fetch categories and images
+  const categoryIds = [...new Set(products.map(p => p.category_id).filter(Boolean))];
+  const productIds = products.map(p => p.id);
+  
+  const [categories, images] = await Promise.all([
+    supabase.from('categories').select('id, name, slug').in('id', categoryIds),
+    supabase.from('product_images').select('product_id, image_url, alt_text, sort_order').in('product_id', productIds).order('sort_order'),
+  ]);
+
+  return products.map(p => ({
+    ...p,
+    category: categories.data?.find(c => c.id === p.category_id) || null,
+    product_images: images.data?.filter(img => img.product_id === p.id) || [],
+  })) as unknown as Product[];
 }
 
 export async function getNewArrivals(): Promise<Product[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  
+  // Fetch new arrival products
+  const { data: products, error } = await supabase
     .from('products')
-    .select('id, slug, title, price, compare_at_price, badge, stock_quantity, category:categories(id, name, slug), product_images(image_url, alt_text, sort_order)')
+    .select('id, slug, title, price, compare_at_price, badge, stock_quantity, category_id')
     .eq('is_new_arrival', true)
     .eq('is_active', true)
     .order('created_at', { ascending: false })
     .limit(12);
-  if (error) return [];
-  return (data ?? []) as unknown as Product[];
+    
+  if (error || !products) return [];
+
+  // Fetch categories and images
+  const categoryIds = [...new Set(products.map(p => p.category_id).filter(Boolean))];
+  const productIds = products.map(p => p.id);
+  
+  const [categories, images] = await Promise.all([
+    supabase.from('categories').select('id, name, slug').in('id', categoryIds),
+    supabase.from('product_images').select('product_id, image_url, alt_text, sort_order').in('product_id', productIds).order('sort_order'),
+  ]);
+
+  return products.map(p => ({
+    ...p,
+    category: categories.data?.find(c => c.id === p.category_id) || null,
+    product_images: images.data?.filter(img => img.product_id === p.id) || [],
+  })) as unknown as Product[];
 }
 
 export async function getProducts(filters: Partial<ProductFilters> = {}): Promise<Product[]> {
   const supabase = await createClient();
   let query = supabase
     .from('products')
-    .select('id, slug, title, price, compare_at_price, badge, stock_quantity, short_description, category:categories(id, name, slug), product_images(image_url, alt_text, sort_order)')
+    .select('id, slug, title, price, compare_at_price, badge, stock_quantity, short_description, category_id')
     .eq('is_active', true);
 
   if (filters.search) {
@@ -102,34 +136,77 @@ export async function getProducts(filters: Partial<ProductFilters> = {}): Promis
   }
 
   query = query.limit(50);
-  const { data, error } = await query;
-  if (error) return [];
-  return (data ?? []) as unknown as Product[];
+  const { data: products, error } = await query;
+  if (error || !products) return [];
+
+  // Fetch categories and images
+  const categoryIds = [...new Set(products.map(p => p.category_id).filter(Boolean))];
+  const productIds = products.map(p => p.id);
+  
+  const [categories, images] = await Promise.all([
+    supabase.from('categories').select('id, name, slug').in('id', categoryIds),
+    supabase.from('product_images').select('product_id, image_url, alt_text, sort_order').in('product_id', productIds).order('sort_order'),
+  ]);
+
+  return products.map(p => ({
+    ...p,
+    category: categories.data?.find(c => c.id === p.category_id) || null,
+    product_images: images.data?.filter(img => img.product_id === p.id) || [],
+  })) as unknown as Product[];
 }
 
 export async function getProductBySlug(slug: string): Promise<Product | null> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  
+  // Fetch product
+  const { data: product, error } = await supabase
     .from('products')
-    .select('*, category:categories(*), product_images(*)')
+    .select('*')
     .eq('slug', slug)
     .eq('is_active', true)
     .single();
-  if (error) return null;
-  return data as Product;
+    
+  if (error || !product) return null;
+
+  // Fetch category and images
+  const [category, images] = await Promise.all([
+    product.category_id ? supabase.from('categories').select('*').eq('id', product.category_id).single() : Promise.resolve({ data: null }),
+    supabase.from('product_images').select('*').eq('product_id', product.id).order('sort_order'),
+  ]);
+
+  return {
+    ...product,
+    category: category.data,
+    product_images: images.data || [],
+  } as Product;
 }
 
 export async function getRelatedProducts(categoryId: string, excludeId: string): Promise<Product[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  
+  // Fetch related products
+  const { data: products, error } = await supabase
     .from('products')
-    .select('id, slug, title, price, compare_at_price, badge, stock_quantity, product_images(image_url, alt_text, sort_order)')
+    .select('id, slug, title, price, compare_at_price, badge, stock_quantity')
     .eq('category_id', categoryId)
     .eq('is_active', true)
     .neq('id', excludeId)
     .limit(6);
-  if (error) return [];
-  return (data ?? []) as Product[];
+    
+  if (error || !products) return [];
+
+  // Fetch images
+  const productIds = products.map(p => p.id);
+  const { data: images } = await supabase
+    .from('product_images')
+    .select('product_id, image_url, alt_text, sort_order')
+    .in('product_id', productIds)
+    .order('sort_order');
+
+  return products.map(p => ({
+    ...p,
+    product_images: images?.filter(img => img.product_id === p.id) || [],
+  })) as Product[];
 }
 
 export async function getProductsByCategory(categorySlug: string): Promise<Product[]> {
@@ -224,14 +301,44 @@ export async function getAdminOrders(status?: string): Promise<Order[]> {
 }
 
 export async function getAdminProducts(): Promise<Product[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
+  const { createAdminClient } = await import('@/lib/supabase/admin');
+  const supabase = createAdminClient();
+  
+  // Fetch products
+  const { data: products, error } = await supabase
     .from('products')
-    .select('id, slug, title, price, compare_at_price, stock_quantity, sku, badge, condition, is_active, is_featured, is_new_arrival, created_at, category:categories(id, name, slug), product_images(image_url, alt_text, sort_order)')
+    .select('id, slug, title, price, compare_at_price, stock_quantity, sku, badge, condition, is_active, is_featured, is_new_arrival, created_at, category_id')
     .order('created_at', { ascending: false })
     .limit(500);
-  if (error) return [];
-  return (data ?? []) as unknown as Product[];
+    
+  if (error || !products) {
+    console.error('Error fetching products:', error);
+    return [];
+  }
+
+  // Fetch categories
+  const categoryIds = [...new Set(products.map(p => p.category_id).filter(Boolean))];
+  const { data: categories } = await supabase
+    .from('categories')
+    .select('id, name, slug')
+    .in('id', categoryIds);
+
+  // Fetch product images
+  const productIds = products.map(p => p.id);
+  const { data: images } = await supabase
+    .from('product_images')
+    .select('product_id, image_url, alt_text, sort_order')
+    .in('product_id', productIds)
+    .order('sort_order', { ascending: true });
+
+  // Attach categories and images to products
+  const productsWithRelations = products.map(product => ({
+    ...product,
+    category: categories?.find(c => c.id === product.category_id) || null,
+    product_images: images?.filter(img => img.product_id === product.id) || [],
+  }));
+
+  return productsWithRelations as unknown as Product[];
 }
 
 export async function getDashboardStats() {
@@ -433,26 +540,54 @@ export async function getActiveBundles() {
 export async function getTopRatedProducts(): Promise<Product[]> {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from('products')
-    .select('id, slug, title, price, compare_at_price, badge, stock_quantity, category:categories(id, name, slug), product_images(image_url, alt_text, sort_order), reviews!inner(rating)')
-    .eq('is_active', true)
-    .eq('reviews.is_approved', true)
-    .limit(100);
+  // First get products with approved reviews
+  const { data: reviews, error: reviewsError } = await supabase
+    .from('reviews')
+    .select('product_id, rating')
+    .eq('is_approved', true);
 
-  if (error || !data) return [];
+  if (reviewsError || !reviews) return [];
 
-  const scored = (data as any[])
-    .map((p) => {
-      const ratings: number[] = (p.reviews ?? []).map((r: any) => r.rating);
-      const count = ratings.length;
-      const avg = count ? ratings.reduce((a: number, b: number) => a + b, 0) / count : 0;
-      return { ...p, _avg: avg, _count: count };
-    })
-    .filter((p) => p._count >= 2 && p._avg >= 4.0)
-    .sort((a, b) => b._avg - a._avg)
+  // Calculate average ratings
+  const ratingsByProduct = reviews.reduce((acc: Record<string, number[]>, review) => {
+    if (!acc[review.product_id]) acc[review.product_id] = [];
+    acc[review.product_id].push(review.rating);
+    return acc;
+  }, {});
+
+  // Filter products with at least 2 reviews and avg >= 4.0
+  const topProductIds = Object.entries(ratingsByProduct)
+    .map(([productId, ratings]) => ({
+      productId,
+      avg: ratings.reduce((a, b) => a + b, 0) / ratings.length,
+      count: ratings.length,
+    }))
+    .filter(p => p.count >= 2 && p.avg >= 4.0)
+    .sort((a, b) => b.avg - a.avg)
     .slice(0, 6)
-    .map(({ reviews: _r, _avg, _count, ...p }) => p);
+    .map(p => p.productId);
 
-  return scored as unknown as Product[];
+  if (topProductIds.length === 0) return [];
+
+  // Fetch products
+  const { data: products } = await supabase
+    .from('products')
+    .select('id, slug, title, price, compare_at_price, badge, stock_quantity, category_id')
+    .in('id', topProductIds)
+    .eq('is_active', true);
+
+  if (!products) return [];
+
+  // Fetch categories and images
+  const categoryIds = [...new Set(products.map(p => p.category_id).filter(Boolean))];
+  const [categories, images] = await Promise.all([
+    supabase.from('categories').select('id, name, slug').in('id', categoryIds),
+    supabase.from('product_images').select('product_id, image_url, alt_text, sort_order').in('product_id', topProductIds).order('sort_order'),
+  ]);
+
+  return products.map(p => ({
+    ...p,
+    category: categories.data?.find(c => c.id === p.category_id) || null,
+    product_images: images.data?.filter(img => img.product_id === p.id) || [],
+  })) as unknown as Product[];
 }
