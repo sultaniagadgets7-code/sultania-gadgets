@@ -167,22 +167,36 @@ create policy "addresses: delete own"
 -- can view their order history
 -- ============================================================
 
-alter table orders
-  add column if not exists user_id uuid references auth.users(id) on delete set null;
+-- First add the column without constraint
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS user_id UUID;
 
 -- Add city/address to profiles if not already present
-alter table profiles add column if not exists city    text;
-alter table profiles add column if not exists address text;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS city TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS address TEXT;
 
-create index if not exists idx_orders_user_id on orders(user_id);
+-- Add the foreign key constraint separately
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.table_constraints 
+    WHERE constraint_name = 'orders_user_id_fkey' 
+    AND table_name = 'orders'
+  ) THEN
+    ALTER TABLE orders ADD CONSTRAINT orders_user_id_fkey 
+      FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+-- Create index
+CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
 
 -- Allow users to read their own orders
-drop policy if exists "Users read own orders" on orders;
-drop policy if exists "orders: select own" on orders;
+DROP POLICY IF EXISTS "Users read own orders" ON orders;
+DROP POLICY IF EXISTS "orders: select own" ON orders;
 
-create policy "orders: select own"
-  on orders for select
-  using (auth.uid() = user_id);
+CREATE POLICY "orders: select own"
+  ON orders FOR SELECT
+  USING (auth.uid() = user_id);
 
 
 -- ============================================================
