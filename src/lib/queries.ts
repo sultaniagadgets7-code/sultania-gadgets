@@ -13,7 +13,6 @@ export async function getCategories(): Promise<Category[]> {
   return data ?? [];
 }
 
-// Nav categories — regular async (uses cookies via Supabase auth)
 export async function getNavCategories(): Promise<Category[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -35,7 +34,6 @@ export async function getNavCategories(): Promise<Category[]> {
   return (data as Category[]).filter((c) => ids.has(c.id));
 }
 
-// Site settings — regular async
 export async function getSiteSettings(): Promise<SiteSettings | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -49,8 +47,6 @@ export async function getSiteSettings(): Promise<SiteSettings | null> {
 
 export async function getFeaturedProducts(): Promise<Product[]> {
   const supabase = await createClient();
-  
-  // Fetch featured products
   const { data: products, error } = await supabase
     .from('products')
     .select('id, slug, title, price, compare_at_price, badge, stock_quantity, category_id')
@@ -58,13 +54,10 @@ export async function getFeaturedProducts(): Promise<Product[]> {
     .eq('is_active', true)
     .order('created_at', { ascending: false })
     .limit(12);
-    
   if (error || !products) return [];
 
-  // Fetch categories and images
   const categoryIds = [...new Set(products.map(p => p.category_id).filter(Boolean))];
   const productIds = products.map(p => p.id);
-  
   const [categories, images] = await Promise.all([
     supabase.from('categories').select('id, name, slug').in('id', categoryIds),
     supabase.from('product_images').select('product_id, image_url, alt_text, sort_order').in('product_id', productIds).order('sort_order'),
@@ -79,8 +72,6 @@ export async function getFeaturedProducts(): Promise<Product[]> {
 
 export async function getNewArrivals(): Promise<Product[]> {
   const supabase = await createClient();
-  
-  // Fetch new arrival products
   const { data: products, error } = await supabase
     .from('products')
     .select('id, slug, title, price, compare_at_price, badge, stock_quantity, category_id')
@@ -88,13 +79,10 @@ export async function getNewArrivals(): Promise<Product[]> {
     .eq('is_active', true)
     .order('created_at', { ascending: false })
     .limit(12);
-    
   if (error || !products) return [];
 
-  // Fetch categories and images
   const categoryIds = [...new Set(products.map(p => p.category_id).filter(Boolean))];
   const productIds = products.map(p => p.id);
-  
   const [categories, images] = await Promise.all([
     supabase.from('categories').select('id, name, slug').in('id', categoryIds),
     supabase.from('product_images').select('product_id, image_url, alt_text, sort_order').in('product_id', productIds).order('sort_order'),
@@ -139,10 +127,8 @@ export async function getProducts(filters: Partial<ProductFilters> = {}): Promis
   const { data: products, error } = await query;
   if (error || !products) return [];
 
-  // Fetch categories and images
   const categoryIds = [...new Set(products.map(p => p.category_id).filter(Boolean))];
   const productIds = products.map(p => p.id);
-  
   const [categories, images] = await Promise.all([
     supabase.from('categories').select('id, name, slug').in('id', categoryIds),
     supabase.from('product_images').select('product_id, image_url, alt_text, sort_order').in('product_id', productIds).order('sort_order'),
@@ -157,18 +143,14 @@ export async function getProducts(filters: Partial<ProductFilters> = {}): Promis
 
 export async function getProductBySlug(slug: string): Promise<Product | null> {
   const supabase = await createClient();
-  
-  // Fetch product
   const { data: product, error } = await supabase
     .from('products')
     .select('*')
     .eq('slug', slug)
     .eq('is_active', true)
     .single();
-    
   if (error || !product) return null;
 
-  // Fetch category and images
   const [category, images] = await Promise.all([
     product.category_id ? supabase.from('categories').select('*').eq('id', product.category_id).single() : Promise.resolve({ data: null }),
     supabase.from('product_images').select('*').eq('product_id', product.id).order('sort_order'),
@@ -183,8 +165,6 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
 
 export async function getRelatedProducts(categoryId: string, excludeId: string): Promise<Product[]> {
   const supabase = await createClient();
-  
-  // Fetch related products
   const { data: products, error } = await supabase
     .from('products')
     .select('id, slug, title, price, compare_at_price, badge, stock_quantity')
@@ -192,10 +172,8 @@ export async function getRelatedProducts(categoryId: string, excludeId: string):
     .eq('is_active', true)
     .neq('id', excludeId)
     .limit(6);
-    
   if (error || !products) return [];
 
-  // Fetch images
   const productIds = products.map(p => p.id);
   const { data: images } = await supabase
     .from('product_images')
@@ -218,17 +196,14 @@ export async function getProductsByCategory(categorySlug: string): Promise<Produ
     .single();
   if (!category) return [];
 
-  // Fetch products
   const { data: products, error } = await supabase
     .from('products')
     .select('id, slug, title, price, compare_at_price, badge, stock_quantity, category_id')
     .eq('category_id', category.id)
     .eq('is_active', true)
     .order('created_at', { ascending: false });
-    
   if (error || !products) return [];
 
-  // Fetch category details and images
   const productIds = products.map(p => p.id);
   const [categoryData, images] = await Promise.all([
     supabase.from('categories').select('id, name, slug').eq('id', category.id).single(),
@@ -273,128 +248,144 @@ export async function getTestimonials(): Promise<Testimonial[]> {
   return (data ?? []) as unknown as Testimonial[];
 }
 
-// Admin queries
+// ── Admin queries ─────────────────────────────────────────────
+
 export async function getAdminOrders(status?: string): Promise<Order[]> {
-  const { createAdminClient } = await import('@/lib/supabase/admin');
-  const supabase = createAdminClient();
-  
-  // First, fetch orders
-  let ordersQuery = supabase
-    .from('orders')
-    .select('*')
-    .order('created_at', { ascending: false });
+  try {
+    const { createAdminClient } = await import('@/lib/supabase/admin');
+    const supabase = createAdminClient();
 
-  if (status && status !== 'all') ordersQuery = ordersQuery.eq('status', status);
+    let ordersQuery = supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-  const { data: orders, error: ordersError } = await ordersQuery;
-  if (ordersError || !orders) {
-    console.error('Error fetching orders:', ordersError);
+    if (status && status !== 'all') ordersQuery = ordersQuery.eq('status', status);
+
+    const { data: orders, error: ordersError } = await ordersQuery;
+    if (ordersError || !orders) {
+      console.error('Error fetching orders:', ordersError);
+      return [];
+    }
+
+    if (orders.length === 0) return [];
+
+    const orderIds = orders.map(o => o.id);
+    const { data: orderItems } = await supabase
+      .from('order_items')
+      .select('*')
+      .in('order_id', orderIds);
+
+    const productIds = [...new Set(orderItems?.map(item => item.product_id).filter(Boolean) || [])];
+    let products = null;
+    let productImages = null;
+
+    if (productIds.length > 0) {
+      const [productsResult, imagesResult] = await Promise.all([
+        supabase.from('products').select('id, title').in('id', productIds),
+        supabase.from('product_images').select('product_id, image_url, sort_order').in('product_id', productIds).order('sort_order'),
+      ]);
+      products = productsResult.data;
+      productImages = imagesResult.data;
+    }
+
+    const itemsWithProducts = orderItems?.map(item => ({
+      ...item,
+      product: products?.find(p => p.id === item.product_id) || null,
+      product_images: productImages?.filter(img => img.product_id === item.product_id) || [],
+    })) || [];
+
+    const ordersWithItems = orders.map(order => ({
+      ...order,
+      order_items: itemsWithProducts.filter(item => item.order_id === order.id),
+    }));
+
+    return ordersWithItems as Order[];
+  } catch (err) {
+    console.error('getAdminOrders error:', err);
     return [];
   }
-
-  if (orders.length === 0) return [];
-
-  // Fetch order items
-  const orderIds = orders.map(o => o.id);
-  const { data: orderItems } = await supabase
-    .from('order_items')
-    .select('*')
-    .in('order_id', orderIds);
-
-  // Fetch products for order items
-  const productIds = [...new Set(orderItems?.map(item => item.product_id).filter(Boolean) || [])];
-  let products = null;
-  let productImages = null;
-
-  if (productIds.length > 0) {
-    const [productsResult, imagesResult] = await Promise.all([
-      supabase.from('products').select('id, title').in('id', productIds),
-      supabase.from('product_images').select('product_id, image_url, sort_order').in('product_id', productIds).order('sort_order'),
-    ]);
-    products = productsResult.data;
-    productImages = imagesResult.data;
-  }
-
-  // Attach products and images to order items
-  const itemsWithProducts = orderItems?.map(item => ({
-    ...item,
-    product: products?.find(p => p.id === item.product_id) || null,
-    product_images: productImages?.filter(img => img.product_id === item.product_id) || [],
-  })) || [];
-
-  // Attach order items to orders
-  const ordersWithItems = orders.map(order => ({
-    ...order,
-    order_items: itemsWithProducts.filter(item => item.order_id === order.id),
-  }));
-
-  return ordersWithItems as Order[];
 }
 
 export async function getAdminProducts(): Promise<Product[]> {
-  const { createAdminClient } = await import('@/lib/supabase/admin');
-  const supabase = createAdminClient();
-  
-  // Fetch products
-  const { data: products, error } = await supabase
-    .from('products')
-    .select('id, slug, title, price, compare_at_price, stock_quantity, sku, badge, condition, is_active, is_featured, is_new_arrival, created_at, category_id')
-    .order('created_at', { ascending: false })
-    .limit(500);
-    
-  if (error || !products) {
-    console.error('Error fetching products:', error);
+  try {
+    const { createAdminClient } = await import('@/lib/supabase/admin');
+    const supabase = createAdminClient();
+
+    const { data: products, error } = await supabase
+      .from('products')
+      .select('id, slug, title, price, compare_at_price, stock_quantity, sku, badge, condition, is_active, is_featured, is_new_arrival, created_at, category_id')
+      .order('created_at', { ascending: false })
+      .limit(500);
+
+    if (error || !products) {
+      console.error('Error fetching products:', error);
+      return [];
+    }
+
+    const categoryIds = [...new Set(products.map(p => p.category_id).filter(Boolean))];
+    const { data: categories } = await supabase
+      .from('categories')
+      .select('id, name, slug')
+      .in('id', categoryIds);
+
+    const productIds = products.map(p => p.id);
+    const { data: images } = await supabase
+      .from('product_images')
+      .select('product_id, image_url, alt_text, sort_order')
+      .in('product_id', productIds)
+      .order('sort_order', { ascending: true });
+
+    const productsWithRelations = products.map(product => ({
+      ...product,
+      category: categories?.find(c => c.id === product.category_id) || null,
+      product_images: images?.filter(img => img.product_id === product.id) || [],
+    }));
+
+    return productsWithRelations as unknown as Product[];
+  } catch (err) {
+    console.error('getAdminProducts error:', err);
     return [];
   }
-
-  // Fetch categories
-  const categoryIds = [...new Set(products.map(p => p.category_id).filter(Boolean))];
-  const { data: categories } = await supabase
-    .from('categories')
-    .select('id, name, slug')
-    .in('id', categoryIds);
-
-  // Fetch product images
-  const productIds = products.map(p => p.id);
-  const { data: images } = await supabase
-    .from('product_images')
-    .select('product_id, image_url, alt_text, sort_order')
-    .in('product_id', productIds)
-    .order('sort_order', { ascending: true });
-
-  // Attach categories and images to products
-  const productsWithRelations = products.map(product => ({
-    ...product,
-    category: categories?.find(c => c.id === product.category_id) || null,
-    product_images: images?.filter(img => img.product_id === product.id) || [],
-  }));
-
-  return productsWithRelations as unknown as Product[];
 }
 
 export async function getDashboardStats() {
-  const { createAdminClient } = await import('@/lib/supabase/admin');
-  const supabase = createAdminClient();
-  const [products, orders] = await Promise.all([
-    supabase.from('products').select('id, is_active, stock_quantity'),
-    supabase.from('orders').select('id, status'),
-  ]);
+  try {
+    const { createAdminClient } = await import('@/lib/supabase/admin');
+    const supabase = createAdminClient();
+    const [products, orders] = await Promise.all([
+      supabase.from('products').select('id, is_active, stock_quantity'),
+      supabase.from('orders').select('id, status'),
+    ]);
 
-  const productData = products.data ?? [];
-  const orderData = orders.data ?? [];
+    const productData = products.data ?? [];
+    const orderData = orders.data ?? [];
 
-  return {
-    totalProducts: productData.filter((p) => p.is_active).length,
-    totalOrders: orderData.length,
-    pendingOrders: orderData.filter((o) => o.status === 'pending').length,
-    confirmedOrders: orderData.filter((o) => o.status === 'confirmed').length,
-    deliveredOrders: orderData.filter((o) => o.status === 'delivered').length,
-    lowStock: productData.filter((p) => p.is_active && p.stock_quantity <= 3).length,
-    outOfStock: productData.filter((p) => p.is_active && p.stock_quantity === 0).length,
-  };
+    return {
+      totalProducts: productData.filter((p) => p.is_active).length,
+      totalOrders: orderData.length,
+      pendingOrders: orderData.filter((o) => o.status === 'pending').length,
+      confirmedOrders: orderData.filter((o) => o.status === 'confirmed').length,
+      deliveredOrders: orderData.filter((o) => o.status === 'delivered').length,
+      lowStock: productData.filter((p) => p.is_active && p.stock_quantity <= 3).length,
+      outOfStock: productData.filter((p) => p.is_active && p.stock_quantity === 0).length,
+    };
+  } catch (err) {
+    console.error('getDashboardStats error:', err);
+    return {
+      totalProducts: 0,
+      totalOrders: 0,
+      pendingOrders: 0,
+      confirmedOrders: 0,
+      deliveredOrders: 0,
+      lowStock: 0,
+      outOfStock: 0,
+    };
+  }
 }
 
 // ── Account queries ───────────────────────────────────────────
+
 export async function getUserProfile() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -429,35 +420,34 @@ export async function getUserOrders() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
-  // Use admin client to bypass RLS — user can only see their own orders (filtered by user_id)
-  const { createAdminClient } = await import('@/lib/supabase/admin');
-  const admin = createAdminClient();
+  try {
+    const { createAdminClient } = await import('@/lib/supabase/admin');
+    const admin = createAdminClient();
 
-  // Fetch orders first
-  const { data: orders, error: ordersError } = await admin
-    .from('orders')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
+    const { data: orders, error: ordersError } = await admin
+      .from('orders')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
 
-  if (ordersError || !orders) return [];
+    if (ordersError || !orders) return [];
 
-  // Fetch order items
-  const orderIds = orders.map(o => o.id);
-  if (orderIds.length === 0) return [];
+    const orderIds = orders.map(o => o.id);
+    if (orderIds.length === 0) return [];
 
-  const { data: orderItems } = await admin
-    .from('order_items')
-    .select('order_id, product_title_snapshot, price_snapshot, quantity')
-    .in('order_id', orderIds);
+    const { data: orderItems } = await admin
+      .from('order_items')
+      .select('order_id, product_title_snapshot, price_snapshot, quantity')
+      .in('order_id', orderIds);
 
-  // Attach items to orders
-  const ordersWithItems = orders.map(order => ({
-    ...order,
-    order_items: orderItems?.filter(item => item.order_id === order.id) || [],
-  }));
-
-  return ordersWithItems;
+    return orders.map(order => ({
+      ...order,
+      order_items: orderItems?.filter(item => item.order_id === order.id) || [],
+    }));
+  } catch (err) {
+    console.error('getUserOrders error:', err);
+    return [];
+  }
 }
 
 export async function getUserWishlist() {
@@ -489,6 +479,7 @@ export async function getWishlistIds() {
 }
 
 // ── Reviews ───────────────────────────────────────────────────
+
 export async function getProductReviews(productId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -555,6 +546,7 @@ export async function canUserReviewProduct(productId: string): Promise<{
 }
 
 // ── Bundles ───────────────────────────────────────────────────
+
 export async function getActiveBundles() {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -568,10 +560,10 @@ export async function getActiveBundles() {
 }
 
 // ── Top Rated Products ────────────────────────────────────────
+
 export async function getTopRatedProducts(): Promise<Product[]> {
   const supabase = await createClient();
 
-  // First get products with approved reviews
   const { data: reviews, error: reviewsError } = await supabase
     .from('reviews')
     .select('product_id, rating')
@@ -579,14 +571,12 @@ export async function getTopRatedProducts(): Promise<Product[]> {
 
   if (reviewsError || !reviews) return [];
 
-  // Calculate average ratings
   const ratingsByProduct = reviews.reduce((acc: Record<string, number[]>, review) => {
     if (!acc[review.product_id]) acc[review.product_id] = [];
     acc[review.product_id].push(review.rating);
     return acc;
   }, {});
 
-  // Filter products with at least 2 reviews and avg >= 4.0
   const topProductIds = Object.entries(ratingsByProduct)
     .map(([productId, ratings]) => ({
       productId,
@@ -600,7 +590,6 @@ export async function getTopRatedProducts(): Promise<Product[]> {
 
   if (topProductIds.length === 0) return [];
 
-  // Fetch products
   const { data: products } = await supabase
     .from('products')
     .select('id, slug, title, price, compare_at_price, badge, stock_quantity, category_id')
@@ -609,7 +598,6 @@ export async function getTopRatedProducts(): Promise<Product[]> {
 
   if (!products) return [];
 
-  // Fetch categories and images
   const categoryIds = [...new Set(products.map(p => p.category_id).filter(Boolean))];
   const [categories, images] = await Promise.all([
     supabase.from('categories').select('id, name, slug').in('id', categoryIds),
