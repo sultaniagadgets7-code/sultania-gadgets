@@ -22,7 +22,7 @@ const nextConfig: NextConfig = {
     serverActions: {
       allowedOrigins: isDev 
         ? ['localhost:3000']
-        : ['sultaniagadgets.com', '*.vercel.app'],
+        : ['sultaniagadgets.com', 'www.sultaniagadgets.com', 'sultania-gadgets.vercel.app'],
     },
     optimizePackageImports: ['lucide-react', '@supabase/supabase-js', '@supabase/ssr'],
     // Reduce prefetch timeout to avoid QUIC errors
@@ -80,11 +80,11 @@ const nextConfig: NextConfig = {
           { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],
       },
-      // Cache API responses briefly
+      // No caching for API routes — auth cookies must not be cached
       {
         source: '/api/(.*)',
         headers: [
-          { key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=300' },
+          { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate' },
         ],
       },
     ];
