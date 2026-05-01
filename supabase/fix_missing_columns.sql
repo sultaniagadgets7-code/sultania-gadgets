@@ -1,39 +1,27 @@
 -- ============================================================
--- Fix Missing Columns
+-- Fix Missing Columns & Tables
 -- Run this in Supabase SQL Editor
 -- ============================================================
 
--- Add emoji column to categories (missing from original schema)
+-- ── Categories: add emoji column ─────────────────────────────
 ALTER TABLE categories ADD COLUMN IF NOT EXISTS emoji text DEFAULT '📦';
 
--- Add user_id to orders (for logged-in user orders)
+-- ── Orders: add missing columns ──────────────────────────────
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL;
-CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
-
--- Add coupon support to orders
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS coupon_id uuid;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount_amount numeric(10,2) DEFAULT 0;
-
--- Add internal notes to orders
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS notes_internal text;
-
--- Add courier/tracking to orders
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS courier text;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_number text;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS dispatched_at timestamptz;
-
--- Add COD collection tracking
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS cod_collected boolean DEFAULT false;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS cod_collected_at timestamptz;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS cod_collected_by text;
-
--- Add order source
-ALTER TABLE orders ADD COLUMN IF NOT EXISTS order_source text DEFAULT 'website';
-
--- Add delivery fee to orders
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_fee numeric(10,2) DEFAULT 200;
 
--- Add site settings columns
+CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
+
+-- ── Site Settings: add missing columns ───────────────────────
 ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS delivery_fee numeric(10,2) DEFAULT 200;
 ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS announcement_text text;
 ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS hero_headline text;
@@ -45,7 +33,7 @@ ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS social_tiktok text;
 ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS social_youtube text;
 ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS social_twitter text;
 
--- Add profiles table if missing
+-- ── Profiles table ───────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS profiles (
   id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email text,
@@ -60,11 +48,17 @@ CREATE TABLE IF NOT EXISTS profiles (
 );
 
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "Users can read own profile" ON profiles FOR SELECT USING (auth.uid() = id);
-CREATE POLICY IF NOT EXISTS "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
-CREATE POLICY IF NOT EXISTS "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
--- Add wishlist table if missing
+DROP POLICY IF EXISTS "Users can read own profile" ON profiles;
+CREATE POLICY "Users can read own profile" ON profiles FOR SELECT USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
+CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
+CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
+
+-- ── Wishlist table ───────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS wishlist (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -74,9 +68,11 @@ CREATE TABLE IF NOT EXISTS wishlist (
 );
 
 ALTER TABLE wishlist ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "Users manage own wishlist" ON wishlist FOR ALL USING (auth.uid() = user_id);
 
--- Add reviews table if missing
+DROP POLICY IF EXISTS "Users manage own wishlist" ON wishlist;
+CREATE POLICY "Users manage own wishlist" ON wishlist FOR ALL USING (auth.uid() = user_id);
+
+-- ── Reviews table ────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS reviews (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   product_id uuid NOT NULL REFERENCES products(id) ON DELETE CASCADE,
@@ -91,10 +87,14 @@ CREATE TABLE IF NOT EXISTS reviews (
 );
 
 ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "Public read approved reviews" ON reviews FOR SELECT USING (is_approved = true);
-CREATE POLICY IF NOT EXISTS "Authenticated can insert reviews" ON reviews FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
--- Add coupons table if missing
+DROP POLICY IF EXISTS "Public read approved reviews" ON reviews;
+CREATE POLICY "Public read approved reviews" ON reviews FOR SELECT USING (is_approved = true);
+
+DROP POLICY IF EXISTS "Authenticated can insert reviews" ON reviews;
+CREATE POLICY "Authenticated can insert reviews" ON reviews FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+-- ── Coupons table ────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS coupons (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   code text NOT NULL UNIQUE,
@@ -109,10 +109,14 @@ CREATE TABLE IF NOT EXISTS coupons (
 );
 
 ALTER TABLE coupons ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "Public read active coupons" ON coupons FOR SELECT USING (is_active = true);
-CREATE POLICY IF NOT EXISTS "Authenticated manage coupons" ON coupons FOR ALL USING (auth.role() = 'authenticated');
 
--- Add bundles table if missing
+DROP POLICY IF EXISTS "Public read active coupons" ON coupons;
+CREATE POLICY "Public read active coupons" ON coupons FOR SELECT USING (is_active = true);
+
+DROP POLICY IF EXISTS "Authenticated manage coupons" ON coupons;
+CREATE POLICY "Authenticated manage coupons" ON coupons FOR ALL USING (auth.role() = 'authenticated');
+
+-- ── Bundles tables ───────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS bundles (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   slug text NOT NULL UNIQUE,
@@ -131,10 +135,20 @@ CREATE TABLE IF NOT EXISTS bundle_items (
 
 ALTER TABLE bundles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bundle_items ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "Public read active bundles" ON bundles FOR SELECT USING (is_active = true);
-CREATE POLICY IF NOT EXISTS "Public read bundle items" ON bundle_items FOR SELECT USING (true);
 
--- Add blog_posts table if missing
+DROP POLICY IF EXISTS "Public read active bundles" ON bundles;
+CREATE POLICY "Public read active bundles" ON bundles FOR SELECT USING (is_active = true);
+
+DROP POLICY IF EXISTS "Public read bundle items" ON bundle_items;
+CREATE POLICY "Public read bundle items" ON bundle_items FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Authenticated manage bundles" ON bundles;
+CREATE POLICY "Authenticated manage bundles" ON bundles FOR ALL USING (auth.role() = 'authenticated');
+
+DROP POLICY IF EXISTS "Authenticated manage bundle items" ON bundle_items;
+CREATE POLICY "Authenticated manage bundle items" ON bundle_items FOR ALL USING (auth.role() = 'authenticated');
+
+-- ── Blog Posts table ─────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS blog_posts (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   title text NOT NULL,
@@ -152,10 +166,34 @@ CREATE TABLE IF NOT EXISTS blog_posts (
 );
 
 ALTER TABLE blog_posts ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "Public read published posts" ON blog_posts FOR SELECT USING (published = true);
-CREATE POLICY IF NOT EXISTS "Authenticated manage posts" ON blog_posts FOR ALL USING (auth.role() = 'authenticated');
 
--- Loyalty points RPC function
+DROP POLICY IF EXISTS "Public read published posts" ON blog_posts;
+CREATE POLICY "Public read published posts" ON blog_posts FOR SELECT USING (published = true);
+
+DROP POLICY IF EXISTS "Authenticated manage posts" ON blog_posts;
+CREATE POLICY "Authenticated manage posts" ON blog_posts FOR ALL USING (auth.role() = 'authenticated');
+
+-- ── Newsletter Subscribers table ─────────────────────────────
+CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email text NOT NULL UNIQUE,
+  status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'unsubscribed')),
+  source text DEFAULT 'website',
+  subscribed_at timestamptz NOT NULL DEFAULT now(),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_newsletter_email ON newsletter_subscribers(email);
+
+ALTER TABLE newsletter_subscribers ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public can subscribe" ON newsletter_subscribers;
+CREATE POLICY "Public can subscribe" ON newsletter_subscribers FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Authenticated manage newsletter" ON newsletter_subscribers;
+CREATE POLICY "Authenticated manage newsletter" ON newsletter_subscribers FOR ALL USING (auth.role() = 'authenticated');
+
+-- ── RPC Functions ────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION award_loyalty_points(
   p_user_id uuid,
   p_order_id uuid,
@@ -169,7 +207,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Increment coupon usage RPC
 CREATE OR REPLACE FUNCTION increment_coupon_usage(coupon_id uuid)
 RETURNS void AS $$
 BEGIN
@@ -177,18 +214,21 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Verify everything
-SELECT 'Categories emoji column: ' || CASE WHEN EXISTS (
-  SELECT 1 FROM information_schema.columns 
-  WHERE table_name = 'categories' AND column_name = 'emoji'
-) THEN 'EXISTS ✅' ELSE 'MISSING ❌' END as status;
+CREATE OR REPLACE FUNCTION decrement_stock(product_id uuid, qty integer)
+RETURNS void AS $$
+BEGIN
+  UPDATE products
+  SET stock_quantity = GREATEST(0, stock_quantity - qty),
+      updated_at = now()
+  WHERE id = product_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
-SELECT 'Orders user_id column: ' || CASE WHEN EXISTS (
-  SELECT 1 FROM information_schema.columns 
-  WHERE table_name = 'orders' AND column_name = 'user_id'
-) THEN 'EXISTS ✅' ELSE 'MISSING ❌' END as status;
+-- ── Make yourself admin ──────────────────────────────────────
+-- Uncomment and replace email to make a user admin:
+-- UPDATE profiles SET is_admin = TRUE WHERE email = 'sultaniagadgets7@gmail.com';
 
-SELECT 'Profiles table: ' || CASE WHEN EXISTS (
-  SELECT 1 FROM information_schema.tables 
-  WHERE table_name = 'profiles'
-) THEN 'EXISTS ✅' ELSE 'MISSING ❌' END as status;
+-- ── Verification ─────────────────────────────────────────────
+SELECT table_name FROM information_schema.tables
+WHERE table_schema = 'public'
+ORDER BY table_name;
