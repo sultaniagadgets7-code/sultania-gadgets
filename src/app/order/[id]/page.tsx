@@ -97,9 +97,9 @@ export default async function OrderDetailsPage({ params }: Props) {
   const Icon = cfg.icon;
   const shortId = orderWithItems.id.slice(0, 8).toUpperCase();
 
-  // Calculate subtotal (before delivery fee)
+  // Use stored delivery_fee if available, otherwise calculate
   const itemsTotal = orderWithItems.order_items?.reduce((sum: number, item: any) => sum + (item.price_snapshot * item.quantity), 0) || 0;
-  const deliveryFee = orderWithItems.total - itemsTotal;
+  const deliveryFee = orderWithItems.delivery_fee ?? (orderWithItems.total - itemsTotal);
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-8 py-6 sm:py-10">
