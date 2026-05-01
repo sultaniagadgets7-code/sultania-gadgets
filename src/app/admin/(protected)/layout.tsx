@@ -34,11 +34,9 @@ const NAV_ITEMS = [
 ];
 
 export default async function AdminProtectedLayout({ children }: { children: React.ReactNode }) {
-  // Auth check — login page is outside this layout so no loop
   try {
     const supabase = await createClient();
     const { data: { user }, error } = await supabase.auth.getUser();
-
     if (error || !user) {
       redirect('/admin/login');
     }
