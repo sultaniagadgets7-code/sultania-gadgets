@@ -5,18 +5,22 @@ import { StockTable } from './StockTable';
 export const metadata: Metadata = { title: 'Low Stock' };
 
 export default async function AdminStockPage() {
-  const supabase = createAdminClient();
-  const { data } = await supabase
-    .from('products')
-    .select('id, title, sku, stock_quantity, category:categories(name)')
-    .eq('is_active', true)
-    .lte('stock_quantity', 5)
-    .order('stock_quantity', { ascending: true });
-
-  const products = (data ?? []).map((p: any) => ({
-    ...p,
-    category: Array.isArray(p.category) ? p.category[0] : p.category,
-  }));
+  let products: any[] = [];
+  try {
+    const supabase = createAdminClient();
+    const { data } = await supabase
+      .from('products')
+      .select('id, title, sku, stock_quantity, category:categories(name)')
+      .eq('is_active', true)
+      .lte('stock_quantity', 5)
+      .order('stock_quantity', { ascending: true });
+    products = (data ?? []).map((p: any) => ({
+      ...p,
+      category: Array.isArray(p.category) ? p.category[0] : p.category,
+    }));
+  } catch (err) {
+    console.error('AdminStockPage error:', err);
+  }
 
   return (
     <div>

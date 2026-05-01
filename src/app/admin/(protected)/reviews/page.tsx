@@ -6,19 +6,19 @@ import { AddReviewForm } from './AddReviewForm';
 export const metadata: Metadata = { title: 'Reviews' };
 
 export default async function AdminReviewsPage() {
-  const supabase = createAdminClient();
-
-  const [{ data: reviews }, { data: products }] = await Promise.all([
-    supabase
-      .from('reviews')
-      .select('*, product:products(title, slug)')
-      .order('created_at', { ascending: false }),
-    supabase
-      .from('products')
-      .select('id, title')
-      .eq('is_active', true)
-      .order('title'),
-  ]);
+  let reviews: any[] = [];
+  let products: any[] = [];
+  try {
+    const supabase = createAdminClient();
+    const [reviewsRes, productsRes] = await Promise.all([
+      supabase.from('reviews').select('*, product:products(title, slug)').order('created_at', { ascending: false }),
+      supabase.from('products').select('id, title').eq('is_active', true).order('title'),
+    ]);
+    reviews = reviewsRes.data ?? [];
+    products = productsRes.data ?? [];
+  } catch (err) {
+    console.error('AdminReviewsPage error:', err);
+  }
 
   return (
     <div>

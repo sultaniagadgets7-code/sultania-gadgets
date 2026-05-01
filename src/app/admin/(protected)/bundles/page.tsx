@@ -7,11 +7,17 @@ import { Package2, Plus } from 'lucide-react';
 export const metadata: Metadata = { title: 'Bundles' };
 
 export default async function AdminBundlesPage() {
-  const supabase = createAdminClient();
-  const { data: bundles } = await supabase
-    .from('bundles')
-    .select('*, bundle_items(id, quantity, product:products(title, price))')
-    .order('created_at', { ascending: false });
+  let bundles: any[] = [];
+  try {
+    const supabase = createAdminClient();
+    const { data } = await supabase
+      .from('bundles')
+      .select('*, bundle_items(id, quantity, product:products(title, price))')
+      .order('created_at', { ascending: false });
+    bundles = data ?? [];
+  } catch (err) {
+    console.error('AdminBundlesPage error:', err);
+  }
 
   return (
     <div>

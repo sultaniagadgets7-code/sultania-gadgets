@@ -6,15 +6,18 @@ import { CodTable } from './CodTable';
 export const metadata: Metadata = { title: 'COD Collection' };
 
 export default async function CodPage() {
-  const supabase = createAdminClient();
-
-  const { data: orders } = await supabase
-    .from('orders')
-    .select('id, customer_name, phone, city, total, status, cod_collected, cod_collected_at, cod_collected_by, created_at, order_items(product_title_snapshot, quantity)')
-    .eq('status', 'delivered')
-    .order('created_at', { ascending: false });
-
-  const all = orders ?? [];
+  let all: any[] = [];
+  try {
+    const supabase = createAdminClient();
+    const { data: orders } = await supabase
+      .from('orders')
+      .select('id, customer_name, phone, city, total, status, cod_collected, cod_collected_at, cod_collected_by, created_at, order_items(product_title_snapshot, quantity)')
+      .eq('status', 'delivered')
+      .order('created_at', { ascending: false });
+    all = orders ?? [];
+  } catch (err) {
+    console.error('CodPage error:', err);
+  }
   const pending = all.filter((o) => !o.cod_collected);
   const collected = all.filter((o) => o.cod_collected);
 

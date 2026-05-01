@@ -24,35 +24,36 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default async function AdminCustomersPage() {
-  const supabase = createAdminClient();
-  const { data } = await supabase
-    .from('orders')
-    .select('customer_name, phone, city, total, status, created_at')
-    .order('created_at', { ascending: false });
+  let customers: CustomerRow[] = [];
+  try {
+    const supabase = createAdminClient();
+    const { data } = await supabase
+      .from('orders')
+      .select('customer_name, phone, city, total, status, created_at')
+      .order('created_at', { ascending: false });
 
-  const orders = data ?? [];
-
-  // Aggregate by phone
-  const customerMap = new Map<string, CustomerRow>();
-  for (const o of orders) {
-    if (!customerMap.has(o.phone)) {
-      customerMap.set(o.phone, {
-        phone: o.phone,
-        customer_name: o.customer_name,
-        city: o.city,
-        total_orders: 0,
-        total_spent: 0,
-        last_order_date: o.created_at,
-        last_status: o.status,
-      });
+    const orders = data ?? [];
+    const customerMap = new Map<string, CustomerRow>();
+    for (const o of orders) {
+      if (!customerMap.has(o.phone)) {
+        customerMap.set(o.phone, {
+          phone: o.phone,
+          customer_name: o.customer_name,
+          city: o.city,
+          total_orders: 0,
+          total_spent: 0,
+          last_order_date: o.created_at,
+          last_status: o.status,
+        });
+      }
+      const c = customerMap.get(o.phone)!;
+      c.total_orders += 1;
+      c.total_spent += o.total;
     }
-    const c = customerMap.get(o.phone)!;
-    c.total_orders += 1;
-    c.total_spent += o.total;
-    // First row is already the latest due to ordering
+    customers = Array.from(customerMap.values());
+  } catch (err) {
+    console.error('AdminCustomersPage error:', err);
   }
-
-  const customers = Array.from(customerMap.values());
 
   return (
     <div>
